@@ -165,5 +165,12 @@ fun StoryListScreen(onStartSession: () -> Unit, onResumeStory: (Story) -> Unit) 
         ) {
             Text(text = stringResource(R.string.start_new_session))
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = { throw RuntimeException("Test Crash") },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text(text = stringResource(R.string.test_crash))
+        }
     }
 }

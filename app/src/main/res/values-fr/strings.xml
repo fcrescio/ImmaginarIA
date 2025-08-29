@@ -13,4 +13,5 @@
     <string name="transcribing">Transcription…</string>
     <string name="transcription_failed">Échec de la transcription</string>
     <string name="transcription_label">Transcription : %1$s</string>
+    <string name="test_crash">Crash de test</string>
 </resources>
