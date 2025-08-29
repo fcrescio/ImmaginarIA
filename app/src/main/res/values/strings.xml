@@ -15,4 +15,7 @@
     <string name="resume">Resume</string>
     <string name="no_unprocessed_stories">No recorded sessions</string>
     <string name="delete">Delete</string>
+    <string name="transcribing">Transcribing…</string>
+    <string name="transcription_failed">Transcription failed</string>
+    <string name="transcription_label">Transcription: %1$s</string>
 </resources>

@@ -10,4 +10,7 @@
     <string name="re_record">Réenregistrer</string>
     <string name="done">Terminer</string>
     <string name="segment_number">Segment %1$d</string>
+    <string name="transcribing">Transcription…</string>
+    <string name="transcription_failed">Échec de la transcription</string>
+    <string name="transcription_label">Transcription : %1$s</string>
 </resources>

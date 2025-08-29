@@ -10,4 +10,7 @@
     <string name="re_record">Riregistra</string>
     <string name="done">Fatto</string>
     <string name="segment_number">Segmento %1$d</string>
+    <string name="transcribing">Trascrizione…</string>
+    <string name="transcription_failed">Trascrizione fallita</string>
+    <string name="transcription_label">Trascrizione: %1$s</string>
 </resources>
