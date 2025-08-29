@@ -4,4 +4,10 @@
     <string name="no_stories">Nessuna storia</string>
     <string name="start_new_session">Inizia una nuova sessione</string>
     <string name="default_story_title">Sessione iniziata %1$s</string>
+    <string name="record">Registra</string>
+    <string name="stop">Ferma</string>
+    <string name="play">Riproduci</string>
+    <string name="re_record">Riregistra</string>
+    <string name="done">Fatto</string>
+    <string name="segment_number">Segmento %1$d</string>
 </resources>

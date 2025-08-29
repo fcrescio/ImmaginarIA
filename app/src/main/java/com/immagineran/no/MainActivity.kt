@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             var showSplash by remember { mutableStateOf(true) }
+            var showRecorder by remember { mutableStateOf(false) }
             LaunchedEffect(Unit) {
                 delay(2000)
                 showSplash = false
@@ -31,15 +32,26 @@ class MainActivity : ComponentActivity() {
             if (showSplash) {
                 SplashScreen()
             } else {
-                StoryListScreen(onStartSession = {
-                    val context = this@MainActivity
-                    val title = getString(
-                        R.string.default_story_title,
-                        DateFormat.getDateTimeInstance().format(Date())
-                    )
-                    val story = Story(id = System.currentTimeMillis(), title = title, content = "")
-                    StoryRepository.addStory(context, story)
-                })
+                if (showRecorder) {
+                    StoryCreationScreen(onDone = { segments ->
+                        val context = this@MainActivity
+                        val title = getString(
+                            R.string.default_story_title,
+                            DateFormat.getDateTimeInstance().format(Date())
+                        )
+                        val story = Story(
+                            id = System.currentTimeMillis(),
+                            title = title,
+                            content = "Recorded segments: ${segments.size}"
+                        )
+                        StoryRepository.addStory(context, story)
+                        showRecorder = false
+                    })
+                } else {
+                    StoryListScreen(onStartSession = {
+                        showRecorder = true
+                    })
+                }
             }
         }
     }
