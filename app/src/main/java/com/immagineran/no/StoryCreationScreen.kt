@@ -21,10 +21,10 @@ import androidx.core.content.ContextCompat
 import java.io.File
 
 @Composable
-fun StoryCreationScreen(onDone: (List<File>) -> Unit) {
+fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File>) -> Unit) {
     val context = LocalContext.current
     var isRecording by remember { mutableStateOf(false) }
-    val segments = remember { mutableStateListOf<File>() }
+    val segments = remember { mutableStateListOf<File>().apply { addAll(initialSegments) } }
     var currentIndex by remember { mutableStateOf(-1) }
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
