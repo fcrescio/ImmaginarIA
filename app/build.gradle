@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.imaginar.ai'
+    namespace 'com.immagineran.no'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.imaginar.ai"
+        applicationId "com.immagineran.no"
         minSdk 24
         targetSdk 33
         versionCode 1
