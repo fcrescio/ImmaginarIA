@@ -19,10 +19,12 @@ import kotlinx.coroutines.delay
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
+import com.google.firebase.FirebaseApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         setContent {
             var showSplash by remember { mutableStateOf(true) }
             var showRecorder by remember { mutableStateOf(false) }
