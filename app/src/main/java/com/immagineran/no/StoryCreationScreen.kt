@@ -202,7 +202,14 @@ private fun transcribeSegment(
     recognizer.setRecognitionListener(object : RecognitionListener {
         override fun onResults(results: Bundle?) {
             val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-            transcriptions[index] = text ?: context.getString(R.string.transcription_failed)
+            if (text != null) {
+                transcriptions[index] = text
+            } else {
+                FirebaseCrashlytics.getInstance().recordException(
+                    Exception("SpeechRecognizer returned null result")
+                )
+                transcriptions[index] = context.getString(R.string.transcription_failed)
+            }
             recognizer.destroy()
         }
 
