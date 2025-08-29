@@ -1,4 +1,4 @@
-package com.imaginar.ai
+package com.immagineran.no
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
