@@ -10,6 +10,11 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import java.util.Locale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.immagineran.no.WhisperTranscriber
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -28,7 +33,11 @@ import java.io.File
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 @Composable
-fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File>) -> Unit) {
+fun StoryCreationScreen(
+    initialSegments: List<File> = emptyList(),
+    onDone: (List<File>) -> Unit,
+    useWhisper: Boolean = false
+) {
     val context = LocalContext.current
     var isRecording by remember { mutableStateOf(false) }
     val segments = remember { mutableStateListOf<File>().apply { addAll(initialSegments) } }
@@ -39,7 +48,7 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
 
     LaunchedEffect(Unit) {
         initialSegments.forEachIndexed { idx, file ->
-            transcribeSegment(context, file, idx, transcriptions)
+            transcribeSegment(context, file, idx, transcriptions, useWhisper)
         }
     }
 
@@ -63,7 +72,7 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
         Button(onClick = {
             if (isRecording) {
                 stopRecording(recorder) { recorder = null }
-                transcribeSegment(context, segments[currentIndex], currentIndex, transcriptions)
+                transcribeSegment(context, segments[currentIndex], currentIndex, transcriptions, useWhisper)
                 isRecording = false
                 currentIndex = -1
             } else {
@@ -195,47 +204,62 @@ private fun transcribeSegment(
     context: android.content.Context,
     file: File,
     index: Int,
-    transcriptions: MutableList<String?>
+    transcriptions: MutableList<String?>,
+    useWhisper: Boolean
 ) {
     transcriptions[index] = null
-    val recognizer = SpeechRecognizer.createSpeechRecognizer(context)
-    recognizer.setRecognitionListener(object : RecognitionListener {
-        override fun onResults(results: Bundle?) {
-            val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-            if (text != null) {
-                transcriptions[index] = text
-            } else {
-                FirebaseCrashlytics.getInstance().recordException(
-                    Exception("SpeechRecognizer returned null result")
-                )
-                transcriptions[index] = context.getString(R.string.transcription_failed)
+    if (useWhisper) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = try {
+                WhisperTranscriber.transcribe(context, file)
+            } catch (e: Exception) {
+                FirebaseCrashlytics.getInstance().recordException(e)
+                context.getString(R.string.transcription_failed)
             }
-            recognizer.destroy()
+            withContext(Dispatchers.Main) {
+                transcriptions[index] = result
+            }
         }
+    } else {
+        val recognizer = SpeechRecognizer.createSpeechRecognizer(context)
+        recognizer.setRecognitionListener(object : RecognitionListener {
+            override fun onResults(results: Bundle?) {
+                val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                if (text != null) {
+                    transcriptions[index] = text
+                } else {
+                    FirebaseCrashlytics.getInstance().recordException(
+                        Exception("SpeechRecognizer returned null result")
+                    )
+                    transcriptions[index] = context.getString(R.string.transcription_failed)
+                }
+                recognizer.destroy()
+            }
 
-        override fun onError(error: Int) {
-            FirebaseCrashlytics.getInstance()
-                .recordException(Exception("SpeechRecognizer error code: $error"))
-            transcriptions[index] = context.getString(R.string.transcription_failed)
-            recognizer.destroy()
+            override fun onError(error: Int) {
+                FirebaseCrashlytics.getInstance()
+                    .recordException(Exception("SpeechRecognizer error code: $error"))
+                transcriptions[index] = context.getString(R.string.transcription_failed)
+                recognizer.destroy()
+            }
+
+            override fun onReadyForSpeech(params: Bundle?) {}
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            val locale: Locale = context.resources.configuration.locales[0]
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale.toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, file.absolutePath)
         }
-
-        override fun onReadyForSpeech(params: Bundle?) {}
-        override fun onBeginningOfSpeech() {}
-        override fun onRmsChanged(rmsdB: Float) {}
-        override fun onBufferReceived(buffer: ByteArray?) {}
-        override fun onEndOfSpeech() {}
-        override fun onPartialResults(partialResults: Bundle?) {}
-        override fun onEvent(eventType: Int, params: Bundle?) {}
-    })
-    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        val locale: Locale = context.resources.configuration.locales[0]
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale.toLanguageTag())
-        putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-        putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, file.absolutePath)
+        recognizer.startListening(intent)
     }
-    recognizer.startListening(intent)
 }
 

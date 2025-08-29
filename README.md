@@ -2,6 +2,10 @@
 
 ImmaginarIA is an experimental Android application where players build a collaborative story by exchanging short voice messages. The app transcribes the clips, arranges them into a coherent story with the help of a language model and generates images and narration for an illustrated storybook.
 
+## On-device Speech Transcription
+
+The app uses Android's built‑in `SpeechRecognizer` by default, but you can opt in to an experimental on‑device pipeline backed by [OpenAI Whisper](https://github.com/openai/whisper). A small multilingual model (the `tiny` variant) is downloaded on first use and cached locally so it can run entirely offline on devices with less than 3 GB of RAM. Set the `useWhisper` flag when calling `StoryCreationScreen` to enable this mode.
+
 ## Repository Structure
 
 - `app/` – Android application module
