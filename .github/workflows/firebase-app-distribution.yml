@@ -12,13 +12,21 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
+
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: 17
+
+      # Debug: verify the secret is passed correctly
+      - name: Inspect Firebase service account
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | jq '.client_email'
+
       - name: Build release APK
         run: ./gradlew assembleRelease
+
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
@@ -26,4 +34,5 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: ${{ secrets.FIREBASE_TESTERS_GROUPS }}
           file: app/build/outputs/apk/release/app-release.apk
+          debug: true
 
