@@ -19,11 +19,6 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      # Debug: verify the secret is passed correctly
-      - name: Inspect Firebase service account
-        run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | jq '.client_email'
-
       - name: Build release APK
         run: ./gradlew assembleRelease
 
