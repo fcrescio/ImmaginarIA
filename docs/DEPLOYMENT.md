@@ -10,6 +10,7 @@ Pushing a Git tag that starts with `v` triggers the workflow. The action builds 
    - `FIREBASE_SERVICE_ACCOUNT` – contents of the service account JSON file.
    - `FIREBASE_APP_ID` – the Firebase App ID for the Android application.
    - `FIREBASE_TESTERS_GROUPS` – comma-separated list of tester groups or e-mail addresses that should receive builds.
+   - `GOOGLE_SERVICES_JSON` – contents of the `google-services.json` configuration file used by Firebase.
 
 ## Manual trigger
 

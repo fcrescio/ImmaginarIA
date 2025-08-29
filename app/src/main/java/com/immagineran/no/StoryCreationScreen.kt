@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import java.io.File
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 @Composable
 fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File>) -> Unit) {
@@ -206,6 +207,8 @@ private fun transcribeSegment(
         }
 
         override fun onError(error: Int) {
+            FirebaseCrashlytics.getInstance()
+                .recordException(Exception("SpeechRecognizer error code: $error"))
             transcriptions[index] = context.getString(R.string.transcription_failed)
             recognizer.destroy()
         }
