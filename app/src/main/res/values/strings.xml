@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ImmaginarIA</string>
+    <string name="story_list_title">Your Stories</string>
+    <string name="no_stories">No stories yet</string>
+    <string name="start_new_session">Start new session</string>
+    <string name="default_story_title">Session started %1$s</string>
+</resources>
