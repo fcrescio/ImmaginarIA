@@ -40,3 +40,10 @@ gradlew.bat assembleDebug
 ```
 
 The resulting APK can be found in `app/build/outputs/apk/`.
+
+## Deployment
+
+Release builds can be automatically distributed to testers through Firebase App Distribution.
+The GitHub Actions workflow in `.github/workflows/firebase-app-distribution.yml` builds the
+release APK and uploads it whenever a tag starting with `v` is pushed.
+Refer to [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for configuration details.
