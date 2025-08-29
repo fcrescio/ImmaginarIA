@@ -10,4 +10,9 @@
     <string name="re_record">Re-record</string>
     <string name="done">Done</string>
     <string name="segment_number">Segment %1$d</string>
+    <string name="unprocessed_stories_title">Recorded Sessions</string>
+    <string name="processed_stories_title">Finished Stories</string>
+    <string name="resume">Resume</string>
+    <string name="no_unprocessed_stories">No recorded sessions</string>
+    <string name="delete">Delete</string>
 </resources>
