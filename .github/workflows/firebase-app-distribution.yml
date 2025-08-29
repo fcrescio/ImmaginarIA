@@ -21,18 +21,12 @@ jobs:
 
       - name: Build release APK
         run: ./gradlew assembleRelease
-        
-      - name: Write Firebase service account to file
-        run: |
-          cat > $RUNNER_TEMP/firebase_sa.json <<'EOF'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          EOF
           
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
-          serviceCredentialsFile: ${{ runner.temp }}/firebase_sa.json
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: ${{ secrets.FIREBASE_TESTERS_GROUPS }}
           file: app/build/outputs/apk/release/app-release.apk
           debug: true
