@@ -12,9 +12,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the high level architecture
 ## Building
 
 The project is built with Gradle. You will need a Java Development Kit (JDK 17 or later)
-and the Android SDK or Android Studio. If the Gradle wrapper scripts (`gradlew` or
-`gradlew.bat`) are not present, install Gradle separately and replace the wrapper
-commands below with `gradle`.
+and the Android SDK or Android Studio. Use the provided Gradle wrapper scripts to build
+the project.
 
 ### Linux
 
