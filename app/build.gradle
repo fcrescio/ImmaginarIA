@@ -5,6 +5,28 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
+import java.util.Properties
+
+ext.readConf = { key, defVal = "" ->
+    // 1) Environment variable (CI friendly)
+    def envVal = System.getenv(key)
+    if (envVal != null && envVal.trim()) return envVal
+
+    // 2) Gradle project property (-P or gradle.properties)
+    if (project.hasProperty(key)) return project.property(key).toString()
+
+    // 3) local.properties (local dev)
+    def lp = rootProject.file("local.properties")
+    if (lp.exists()) {
+        def p = new Properties()
+        lp.withInputStream { p.load(it) }
+        def v = p.getProperty(key)
+        if (v != null && v.trim()) return v
+    }
+    return defVal
+}
+
+
 android {
     namespace 'com.immagineran.no'
     compileSdk 34
@@ -15,7 +37,7 @@ android {
         targetSdk 34
         versionCode 1
         versionName "0.1"
-        buildConfigField "String", "GROQ_API_KEY", "\"${System.getenv('GROQ_API_KEY') ?: ''}\""
+        buildConfigField "String", "GROQ_API_KEY", "\"${readConf('GROQ_API_KEY', '')}\""
     }
     buildFeatures {
         compose true
