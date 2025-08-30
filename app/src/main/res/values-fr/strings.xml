@@ -10,6 +10,11 @@
     <string name="re_record">Réenregistrer</string>
     <string name="done">Terminer</string>
     <string name="segment_number">Segment %1$d</string>
+    <string name="unprocessed_stories_title">Sessions enregistrées</string>
+    <string name="processed_stories_title">Histoires terminées</string>
+    <string name="resume">Reprendre</string>
+    <string name="no_unprocessed_stories">Aucune session enregistrée</string>
+    <string name="delete">Supprimer</string>
     <string name="transcribing">Transcription…</string>
     <string name="transcription_failed">Échec de la transcription</string>
     <string name="transcription_label">Transcription : %1$s</string>
@@ -25,4 +30,9 @@
     <string name="back">Retour</string>
     <string name="characters_title">Personnages</string>
     <string name="environments_title">Environnements</string>
+    <string name="image_style">Style d\'image</string>
+    <string name="style_photorealistic">Photorealiste</string>
+    <string name="style_cartoon">Cartoon</string>
+    <string name="style_manga">Manga</string>
+    <string name="image_generation_error">Échec de la génération de l\'image</string>
 </resources>

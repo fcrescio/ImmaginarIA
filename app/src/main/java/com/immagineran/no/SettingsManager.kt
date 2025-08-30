@@ -4,6 +4,7 @@ import android.content.Context
 
 private const val PREFS_NAME = "app_settings"
 private const val KEY_TRANSCRIPTION_METHOD = "transcription_method"
+private const val KEY_IMAGE_STYLE = "image_style"
 
 /**
  * Persists user-configurable settings.
@@ -20,6 +21,23 @@ object SettingsManager {
     fun setTranscriptionMethod(context: Context, method: TranscriptionMethod) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_TRANSCRIPTION_METHOD, method.name).apply()
+    }
+
+    /**
+     * Retrieves the preferred [ImageStyle].
+     */
+    fun getImageStyle(context: Context): ImageStyle {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val name = prefs.getString(KEY_IMAGE_STYLE, ImageStyle.PHOTOREALISTIC.name)
+        return runCatching { ImageStyle.valueOf(name!!) }.getOrDefault(ImageStyle.PHOTOREALISTIC)
+    }
+
+    /**
+     * Persists the preferred [ImageStyle].
+     */
+    fun setImageStyle(context: Context, style: ImageStyle) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_IMAGE_STYLE, style.name).apply()
     }
 }
 
