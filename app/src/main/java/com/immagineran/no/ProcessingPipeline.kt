@@ -67,14 +67,15 @@ class ImageGenerationStep(
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
+        val style = SettingsManager.getImageStyle(appContext)
         context.characters = context.characters.mapIndexed { idx, asset ->
             val file = File(dir, "character_${'$'}idx.png")
-            val path = generator.generate(asset.description, file)
+            val path = generator.generate(asset.description, style, file)
             asset.copy(image = path)
         }
         context.environments = context.environments.mapIndexed { idx, asset ->
             val file = File(dir, "environment_${'$'}idx.png")
-            val path = generator.generate(asset.description, file)
+            val path = generator.generate(asset.description, style, file)
             asset.copy(image = path)
         }
     }

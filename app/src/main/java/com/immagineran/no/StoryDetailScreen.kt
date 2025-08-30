@@ -35,6 +35,9 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
                     Column(modifier = Modifier.padding(start = 8.dp)) {
                         Text(c.name, style = MaterialTheme.typography.subtitle1)
                         Text(c.description)
+                        if (c.image == null) {
+                            Text(stringResource(R.string.image_generation_error))
+                        }
                     }
                 }
             }
@@ -50,6 +53,9 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
                     Column(modifier = Modifier.padding(start = 8.dp)) {
                         Text(e.name, style = MaterialTheme.typography.subtitle1)
                         Text(e.description)
+                        if (e.image == null) {
+                            Text(stringResource(R.string.image_generation_error))
+                        }
                     }
                 }
             }

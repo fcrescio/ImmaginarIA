@@ -30,4 +30,9 @@
     <string name="back">Back</string>
     <string name="characters_title">Characters</string>
     <string name="environments_title">Environments</string>
+    <string name="image_style">Image style</string>
+    <string name="style_photorealistic">Photorealistic</string>
+    <string name="style_cartoon">Cartoon</string>
+    <string name="style_manga">Manga</string>
+    <string name="image_generation_error">Image generation failed</string>
 </resources>
