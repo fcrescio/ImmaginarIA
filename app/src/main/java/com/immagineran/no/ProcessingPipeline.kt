@@ -69,12 +69,12 @@ class ImageGenerationStep(
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
         context.characters = context.characters.mapIndexed { idx, asset ->
-            val file = File(dir, "character_${'$'}idx.png")
+            val file = File(dir, "character_${idx}.png")
             val path = generator.generate(asset.description, style, file)
             asset.copy(image = path)
         }
         context.environments = context.environments.mapIndexed { idx, asset ->
-            val file = File(dir, "environment_${'$'}idx.png")
+            val file = File(dir, "environment_${idx}.png")
             val path = generator.generate(asset.description, style, file)
             asset.copy(image = path)
         }
