@@ -20,4 +20,5 @@
     <string name="transcription_method_local">Servizio locale</string>
     <string name="transcription_method_groq">Groq Whisper Turbo</string>
     <string name="save">Salva</string>
+    <string name="story_prompt">Per favore unisci questi segmenti in uno storyboard breve:</string>
 </resources>

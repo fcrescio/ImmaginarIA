@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
-fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File>) -> Unit) {
+fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File>, String) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isRecording by remember { mutableStateOf(false) }
@@ -33,6 +33,7 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     val method = remember { SettingsManager.getTranscriptionMethod(context) }
     val transcriber = remember { TranscriberFactory.create(context, method) }
+    val stitcher = remember { StoryStitcher() }
 
     LaunchedEffect(Unit) {
         initialSegments.forEachIndexed { idx, file ->
@@ -128,7 +129,17 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
         }
 
         Button(
-            onClick = { onDone(segments.toList()) },
+            onClick = {
+                if (transcriptions.all { it != null }) {
+                    scope.launch {
+                        val prompt = context.getString(R.string.story_prompt)
+                        val result = stitcher.stitch(prompt, transcriptions.filterNotNull()) ?: ""
+                        onDone(segments.toList(), result)
+                    }
+                } else {
+                    onDone(segments.toList(), "")
+                }
+            },
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text(stringResource(R.string.done))
