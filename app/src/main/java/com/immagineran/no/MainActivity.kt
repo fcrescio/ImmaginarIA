@@ -31,8 +31,18 @@ class MainActivity : ComponentActivity() {
             var showRecorder by remember { mutableStateOf(false) }
             var showSettings by remember { mutableStateOf(false) }
             var storyToResume by remember { mutableStateOf<Story?>(null) }
+            var storyToView by remember { mutableStateOf<Story?>(null) }
             val scope = rememberCoroutineScope()
-            val pipeline = remember { ProcessingPipeline(listOf(StoryStitchingStep())) }
+            val pipeline = remember {
+                ProcessingPipeline(
+                    listOf(
+                        StoryStitchingStep(),
+                        CharacterExtractionStep(),
+                        EnvironmentExtractionStep(),
+                        ImageGenerationStep(this@MainActivity)
+                    )
+                )
+            }
             LaunchedEffect(Unit) {
                 delay(2000)
                 showSplash = false
@@ -48,13 +58,15 @@ class MainActivity : ComponentActivity() {
                                     val context = this@MainActivity
                                     scope.launch {
                                         val allTranscribed = transcriptions.all { it != null }
-                                        val content = if (allTranscribed) {
+                                        val storyId = storyToResume?.id ?: System.currentTimeMillis()
+                                        val procContext = if (allTranscribed) {
                                             val prompt = getString(R.string.story_prompt)
-                                            val ctx = ProcessingContext(prompt, transcriptions.filterNotNull())
-                                            pipeline.run(ctx).story ?: ""
-                                        } else {
-                                            ""
+                                            ProcessingContext(prompt, transcriptions.filterNotNull(), storyId)
+                                        } else null
+                                        if (procContext != null) {
+                                            pipeline.run(procContext)
                                         }
+                                        val content = procContext?.story ?: ""
                                         val processed = content.isNotBlank()
                                         val segmentPaths = if (processed) {
                                             segments.forEach { it.delete() }
@@ -67,6 +79,8 @@ class MainActivity : ComponentActivity() {
                                                 segments = segmentPaths,
                                                 content = content,
                                                 processed = processed,
+                                                characters = procContext?.characters ?: emptyList(),
+                                                environments = procContext?.environments ?: emptyList(),
                                             )
                                             StoryRepository.updateStory(context, updated)
                                             storyToResume = null
@@ -76,11 +90,13 @@ class MainActivity : ComponentActivity() {
                                                 DateFormat.getDateTimeInstance().format(Date())
                                             )
                                             val story = Story(
-                                                id = System.currentTimeMillis(),
+                                                id = storyId,
                                                 title = title,
                                                 content = content,
                                                 segments = segmentPaths,
                                                 processed = processed,
+                                                characters = procContext?.characters ?: emptyList(),
+                                                environments = procContext?.environments ?: emptyList(),
                                             )
                                             StoryRepository.addStory(context, story)
                                         }
@@ -92,6 +108,9 @@ class MainActivity : ComponentActivity() {
                     showSettings -> {
                         SettingsScreen(onBack = { showSettings = false })
                     }
+                    storyToView != null -> {
+                        StoryDetailScreen(story = storyToView!!, onBack = { storyToView = null })
+                    }
                     else -> {
                         StoryListScreen(
                             onStartSession = {
@@ -102,7 +121,8 @@ class MainActivity : ComponentActivity() {
                                 storyToResume = story
                                 showRecorder = true
                             },
-                            onOpenSettings = { showSettings = true }
+                            onOpenSettings = { showSettings = true },
+                            onViewStory = { story -> storyToView = story }
                         )
                     }
                 }
@@ -123,6 +143,7 @@ fun StoryListScreen(
     onStartSession: () -> Unit,
     onResumeStory: (Story) -> Unit,
     onOpenSettings: () -> Unit,
+    onViewStory: (Story) -> Unit,
 ) {
     val context = LocalContext.current
     var processed by remember { mutableStateOf(emptyList<Story>()) }
@@ -178,26 +199,20 @@ fun StoryListScreen(
                 item { Text(text = stringResource(R.string.no_stories)) }
             } else {
                 items(processed) { story ->
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(text = story.title, modifier = Modifier.weight(1f))
-                            Button(onClick = {
-                                StoryRepository.deleteStory(context, story)
-                                processed = processed.filter { it.id != story.id }
-                            }) {
-                                Text(text = stringResource(R.string.delete))
-                            }
+                        Text(text = story.title, modifier = Modifier.weight(1f))
+                        Button(onClick = { onViewStory(story) }) {
+                            Text(text = stringResource(R.string.view))
                         }
-                        if (story.content.isNotBlank()) {
-                            Text(
-                                text = story.content,
-                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                            )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(onClick = {
+                            StoryRepository.deleteStory(context, story)
+                            processed = processed.filter { it.id != story.id }
+                        }) {
+                            Text(text = stringResource(R.string.delete))
                         }
                     }
                 }

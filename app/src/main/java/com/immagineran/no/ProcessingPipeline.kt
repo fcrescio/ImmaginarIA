@@ -1,12 +1,18 @@
 package com.immagineran.no
 
+import android.content.Context
+import java.io.File
+
 /**
  * Container for data moving through the processing pipeline.
  */
 data class ProcessingContext(
     val prompt: String,
     val segments: List<String>,
+    val id: Long,
     var story: String? = null,
+    var characters: List<CharacterAsset> = emptyList(),
+    var environments: List<EnvironmentAsset> = emptyList(),
 )
 
 /**
@@ -34,6 +40,43 @@ class StoryStitchingStep(
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         context.story = stitcher.stitch(context.prompt, context.segments)
+    }
+}
+
+class CharacterExtractionStep(
+    private val extractor: StoryAssetExtractor = StoryAssetExtractor(),
+) : ProcessingStep {
+    override suspend fun process(context: ProcessingContext) {
+        val story = context.story ?: return
+        context.characters = extractor.extractCharacters(story)
+    }
+}
+
+class EnvironmentExtractionStep(
+    private val extractor: StoryAssetExtractor = StoryAssetExtractor(),
+) : ProcessingStep {
+    override suspend fun process(context: ProcessingContext) {
+        val story = context.story ?: return
+        context.environments = extractor.extractEnvironments(story)
+    }
+}
+
+class ImageGenerationStep(
+    private val appContext: Context,
+    private val generator: ImageGenerator = ImageGenerator(),
+) : ProcessingStep {
+    override suspend fun process(context: ProcessingContext) {
+        val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
+        context.characters = context.characters.mapIndexed { idx, asset ->
+            val file = File(dir, "character_${'$'}idx.png")
+            val path = generator.generate(asset.description, file)
+            asset.copy(image = path)
+        }
+        context.environments = context.environments.mapIndexed { idx, asset ->
+            val file = File(dir, "environment_${'$'}idx.png")
+            val path = generator.generate(asset.description, file)
+            asset.copy(image = path)
+        }
     }
 }
 

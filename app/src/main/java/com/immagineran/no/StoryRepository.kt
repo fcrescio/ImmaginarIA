@@ -23,13 +23,43 @@ object StoryRepository {
                     segments.add(segmentsArray.getString(j))
                 }
             }
+            val characters = mutableListOf<CharacterAsset>()
+            val charArray = obj.optJSONArray("characters")
+            if (charArray != null) {
+                for (j in 0 until charArray.length()) {
+                    val cObj = charArray.optJSONObject(j) ?: continue
+                    characters.add(
+                        CharacterAsset(
+                            name = cObj.optString("name"),
+                            description = cObj.optString("description"),
+                            image = cObj.optString("image", null)
+                        )
+                    )
+                }
+            }
+            val environments = mutableListOf<EnvironmentAsset>()
+            val envArray = obj.optJSONArray("environments")
+            if (envArray != null) {
+                for (j in 0 until envArray.length()) {
+                    val eObj = envArray.optJSONObject(j) ?: continue
+                    environments.add(
+                        EnvironmentAsset(
+                            name = eObj.optString("name"),
+                            description = eObj.optString("description"),
+                            image = eObj.optString("image", null)
+                        )
+                    )
+                }
+            }
             result.add(
                 Story(
                     id = obj.getLong("id"),
                     title = obj.getString("title"),
                     content = obj.optString("content", ""),
                     segments = segments,
-                    processed = obj.optBoolean("processed", false)
+                    processed = obj.optBoolean("processed", false),
+                    characters = characters,
+                    environments = environments,
                 )
             )
         }
@@ -83,6 +113,24 @@ object StoryRepository {
             val segmentsArray = JSONArray()
             s.segments.forEach { segmentsArray.put(it) }
             obj.put("segments", segmentsArray)
+            val charArray = JSONArray()
+            s.characters.forEach { c ->
+                val cObj = JSONObject()
+                cObj.put("name", c.name)
+                cObj.put("description", c.description)
+                c.image?.let { cObj.put("image", it) }
+                charArray.put(cObj)
+            }
+            obj.put("characters", charArray)
+            val envArray = JSONArray()
+            s.environments.forEach { e ->
+                val eObj = JSONObject()
+                eObj.put("name", e.name)
+                eObj.put("description", e.description)
+                e.image?.let { eObj.put("image", it) }
+                envArray.put(eObj)
+            }
+            obj.put("environments", envArray)
             array.put(obj)
         }
         val file = File(context.filesDir, FILE_NAME)

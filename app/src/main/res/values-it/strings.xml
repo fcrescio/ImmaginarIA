@@ -21,4 +21,8 @@
     <string name="transcription_method_groq">Groq Whisper Turbo</string>
     <string name="save">Salva</string>
     <string name="story_prompt">Per favore unisci questi segmenti in uno storyboard breve:</string>
+    <string name="view">Vedi</string>
+    <string name="back">Indietro</string>
+    <string name="characters_title">Personaggi</string>
+    <string name="environments_title">Ambientazioni</string>
 </resources>
