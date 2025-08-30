@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
@@ -30,6 +31,8 @@ class MainActivity : ComponentActivity() {
             var showRecorder by remember { mutableStateOf(false) }
             var showSettings by remember { mutableStateOf(false) }
             var storyToResume by remember { mutableStateOf<Story?>(null) }
+            val scope = rememberCoroutineScope()
+            val pipeline = remember { ProcessingPipeline(listOf(StoryStitchingStep())) }
             LaunchedEffect(Unit) {
                 delay(2000)
                 showSplash = false
@@ -41,38 +44,48 @@ class MainActivity : ComponentActivity() {
                     showRecorder -> {
                             StoryCreationScreen(
                                 initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
-                                onDone = { segments, content ->
+                                onDone = { segments, transcriptions ->
                                     val context = this@MainActivity
-                                    val processed = content.isNotBlank()
-                                    val segmentPaths = if (processed) {
-                                        segments.forEach { it.delete() }
-                                        emptyList()
-                                    } else {
-                                        segments.map { it.absolutePath }
+                                    scope.launch {
+                                        val allTranscribed = transcriptions.all { it != null }
+                                        val content = if (allTranscribed) {
+                                            val prompt = getString(R.string.story_prompt)
+                                            val ctx = ProcessingContext(prompt, transcriptions.filterNotNull())
+                                            pipeline.run(ctx).story ?: ""
+                                        } else {
+                                            ""
+                                        }
+                                        val processed = content.isNotBlank()
+                                        val segmentPaths = if (processed) {
+                                            segments.forEach { it.delete() }
+                                            emptyList()
+                                        } else {
+                                            segments.map { it.absolutePath }
+                                        }
+                                        if (storyToResume != null) {
+                                            val updated = storyToResume!!.copy(
+                                                segments = segmentPaths,
+                                                content = content,
+                                                processed = processed,
+                                            )
+                                            StoryRepository.updateStory(context, updated)
+                                            storyToResume = null
+                                        } else {
+                                            val title = getString(
+                                                R.string.default_story_title,
+                                                DateFormat.getDateTimeInstance().format(Date())
+                                            )
+                                            val story = Story(
+                                                id = System.currentTimeMillis(),
+                                                title = title,
+                                                content = content,
+                                                segments = segmentPaths,
+                                                processed = processed,
+                                            )
+                                            StoryRepository.addStory(context, story)
+                                        }
+                                        showRecorder = false
                                     }
-                                    if (storyToResume != null) {
-                                        val updated = storyToResume!!.copy(
-                                            segments = segmentPaths,
-                                            content = content,
-                                            processed = processed,
-                                        )
-                                        StoryRepository.updateStory(context, updated)
-                                        storyToResume = null
-                                    } else {
-                                        val title = getString(
-                                            R.string.default_story_title,
-                                            DateFormat.getDateTimeInstance().format(Date())
-                                        )
-                                        val story = Story(
-                                            id = System.currentTimeMillis(),
-                                            title = title,
-                                            content = content,
-                                            segments = segmentPaths,
-                                            processed = processed,
-                                        )
-                                        StoryRepository.addStory(context, story)
-                                    }
-                                    showRecorder = false
                                 }
                             )
                         }
