@@ -13,6 +13,7 @@ data class ProcessingContext(
     var story: String? = null,
     var characters: List<CharacterAsset> = emptyList(),
     var environments: List<EnvironmentAsset> = emptyList(),
+    var scenes: List<Scene> = emptyList(),
 )
 
 /**

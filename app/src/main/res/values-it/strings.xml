@@ -30,6 +30,7 @@
     <string name="back">Indietro</string>
     <string name="characters_title">Personaggi</string>
     <string name="environments_title">Ambientazioni</string>
+    <string name="scenes_title">Scene</string>
     <string name="image_style">Stile immagine</string>
     <string name="style_photorealistic">Fotorealistico</string>
     <string name="style_cartoon">Cartoon</string>
