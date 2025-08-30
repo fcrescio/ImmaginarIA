@@ -14,4 +14,9 @@
     <string name="transcription_failed">Échec de la transcription</string>
     <string name="transcription_label">Transcription : %1$s</string>
     <string name="test_crash">Crash de test</string>
+    <string name="settings">Paramètres</string>
+    <string name="settings_title">Paramètres</string>
+    <string name="transcription_method">Méthode de transcription</string>
+    <string name="transcription_method_local">Service local</string>
+    <string name="save">Enregistrer</string>
 </resources>
