@@ -12,6 +12,13 @@ data class EnvironmentAsset(
     val image: String? = null,
 )
 
+data class Scene(
+    val text: String,
+    val environment: EnvironmentAsset? = null,
+    val characters: List<CharacterAsset> = emptyList(),
+    val image: String? = null,
+)
+
 data class Story(
     val id: Long,
     val title: String,
@@ -20,4 +27,5 @@ data class Story(
     val processed: Boolean = false,
     val characters: List<CharacterAsset> = emptyList(),
     val environments: List<EnvironmentAsset> = emptyList(),
+    val scenes: List<Scene> = emptyList(),
 )

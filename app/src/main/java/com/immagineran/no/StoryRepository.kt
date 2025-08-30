@@ -51,6 +51,32 @@ object StoryRepository {
                     )
                 }
             }
+            val scenes = mutableListOf<Scene>()
+            val sceneArray = obj.optJSONArray("scenes")
+            if (sceneArray != null) {
+                for (j in 0 until sceneArray.length()) {
+                    val sObj = sceneArray.optJSONObject(j) ?: continue
+                    val text = sObj.optString("text")
+                    val envName = sObj.optString("environment")
+                    val env = environments.find { it.name == envName }
+                    val chars = mutableListOf<CharacterAsset>()
+                    val names = sObj.optJSONArray("characters")
+                    if (names != null) {
+                        for (k in 0 until names.length()) {
+                            val n = names.optString(k)
+                            characters.find { it.name == n }?.let { chars.add(it) }
+                        }
+                    }
+                    scenes.add(
+                        Scene(
+                            text = text,
+                            environment = env,
+                            characters = chars,
+                            image = sObj.optString("image", null)
+                        )
+                    )
+                }
+            }
             result.add(
                 Story(
                     id = obj.getLong("id"),
@@ -60,6 +86,7 @@ object StoryRepository {
                     processed = obj.optBoolean("processed", false),
                     characters = characters,
                     environments = environments,
+                    scenes = scenes,
                 )
             )
         }
@@ -131,6 +158,18 @@ object StoryRepository {
                 envArray.put(eObj)
             }
             obj.put("environments", envArray)
+            val sceneArray = JSONArray()
+            s.scenes.forEach { scene ->
+                val scObj = JSONObject()
+                scObj.put("text", scene.text)
+                scene.environment?.let { scObj.put("environment", it.name) }
+                val charNames = JSONArray()
+                scene.characters.forEach { c -> charNames.put(c.name) }
+                scObj.put("characters", charNames)
+                scene.image?.let { scObj.put("image", it) }
+                sceneArray.put(scObj)
+            }
+            obj.put("scenes", sceneArray)
             array.put(obj)
         }
         val file = File(context.filesDir, FILE_NAME)

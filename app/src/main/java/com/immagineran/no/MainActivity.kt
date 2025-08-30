@@ -48,7 +48,9 @@ class MainActivity : ComponentActivity() {
                                 StoryStitchingStep(),
                                 CharacterExtractionStep(),
                                 EnvironmentExtractionStep(),
-                                ImageGenerationStep(this@MainActivity)
+                                SceneCompositionStep(),
+                                ImageGenerationStep(this@MainActivity),
+                                SceneImageGenerationStep(this@MainActivity)
                             )
                         )
                     }
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
                                                     processed = processed,
                                                     characters = procContext?.characters ?: emptyList(),
                                                     environments = procContext?.environments ?: emptyList(),
+                                                    scenes = procContext?.scenes ?: emptyList(),
                                                 )
                                                 StoryRepository.updateStory(context, updated)
                                                 storyToResume = null
@@ -106,6 +109,7 @@ class MainActivity : ComponentActivity() {
                                                     processed = processed,
                                                     characters = procContext?.characters ?: emptyList(),
                                                     environments = procContext?.environments ?: emptyList(),
+                                                    scenes = procContext?.scenes ?: emptyList(),
                                                 )
                                                 StoryRepository.addStory(context, story)
                                             }

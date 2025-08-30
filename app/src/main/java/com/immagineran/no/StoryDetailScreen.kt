@@ -23,6 +23,24 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
             Text(story.content, modifier = Modifier.padding(vertical = 8.dp))
         }
         LazyColumn(modifier = Modifier.weight(1f)) {
+            if (story.scenes.isNotEmpty()) {
+                item { Text(stringResource(R.string.scenes_title), style = MaterialTheme.typography.h6) }
+                items(story.scenes) { s ->
+                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        s.image?.let {
+                            val bmp = BitmapFactory.decodeFile(it)
+                            if (bmp != null) {
+                                Image(bitmap = bmp.asImageBitmap(), contentDescription = null, modifier = Modifier.height(128.dp).fillMaxWidth())
+                            }
+                        }
+                        Text(s.text, modifier = Modifier.padding(top = 4.dp))
+                        if (s.image == null) {
+                            Text(stringResource(R.string.image_generation_error))
+                        }
+                    }
+                }
+                item { Spacer(modifier = Modifier.height(8.dp)) }
+            }
             item { Text(stringResource(R.string.characters_title), style = MaterialTheme.typography.h6) }
             items(story.characters) { c ->
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
