@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             var showSplash by remember { mutableStateOf(true) }
             var showRecorder by remember { mutableStateOf(false) }
+            var showSettings by remember { mutableStateOf(false) }
             var storyToResume by remember { mutableStateOf<Story?>(null) }
             LaunchedEffect(Unit) {
                 delay(2000)
@@ -36,45 +37,52 @@ class MainActivity : ComponentActivity() {
             if (showSplash) {
                 SplashScreen()
             } else {
-                if (showRecorder) {
-                    StoryCreationScreen(
-                        initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
-                        onDone = { segments ->
-                            val context = this@MainActivity
-                            if (storyToResume != null) {
-                                val updated = storyToResume!!.copy(
-                                    segments = segments.map { it.absolutePath }
-                                )
-                                StoryRepository.updateStory(context, updated)
-                                storyToResume = null
-                            } else {
-                                val title = getString(
-                                    R.string.default_story_title,
-                                    DateFormat.getDateTimeInstance().format(Date())
-                                )
-                                val story = Story(
-                                    id = System.currentTimeMillis(),
-                                    title = title,
-                                    content = "",
-                                    segments = segments.map { it.absolutePath },
-                                    processed = false
-                                )
-                                StoryRepository.addStory(context, story)
+                when {
+                    showRecorder -> {
+                        StoryCreationScreen(
+                            initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
+                            onDone = { segments ->
+                                val context = this@MainActivity
+                                if (storyToResume != null) {
+                                    val updated = storyToResume!!.copy(
+                                        segments = segments.map { it.absolutePath }
+                                    )
+                                    StoryRepository.updateStory(context, updated)
+                                    storyToResume = null
+                                } else {
+                                    val title = getString(
+                                        R.string.default_story_title,
+                                        DateFormat.getDateTimeInstance().format(Date())
+                                    )
+                                    val story = Story(
+                                        id = System.currentTimeMillis(),
+                                        title = title,
+                                        content = "",
+                                        segments = segments.map { it.absolutePath },
+                                        processed = false,
+                                    )
+                                    StoryRepository.addStory(context, story)
+                                }
+                                showRecorder = false
                             }
-                            showRecorder = false
-                        }
-                    )
-                } else {
-                    StoryListScreen(
-                        onStartSession = {
-                            storyToResume = null
-                            showRecorder = true
-                        },
-                        onResumeStory = { story ->
-                            storyToResume = story
-                            showRecorder = true
-                        }
-                    )
+                        )
+                    }
+                    showSettings -> {
+                        SettingsScreen(onBack = { showSettings = false })
+                    }
+                    else -> {
+                        StoryListScreen(
+                            onStartSession = {
+                                storyToResume = null
+                                showRecorder = true
+                            },
+                            onResumeStory = { story ->
+                                storyToResume = story
+                                showRecorder = true
+                            },
+                            onOpenSettings = { showSettings = true }
+                        )
+                    }
                 }
             }
         }
@@ -89,7 +97,11 @@ fun SplashScreen() {
 }
 
 @Composable
-fun StoryListScreen(onStartSession: () -> Unit, onResumeStory: (Story) -> Unit) {
+fun StoryListScreen(
+    onStartSession: () -> Unit,
+    onResumeStory: (Story) -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     val context = LocalContext.current
     var processed by remember { mutableStateOf(emptyList<Story>()) }
     var pending by remember { mutableStateOf(emptyList<Story>()) }
@@ -101,7 +113,7 @@ fun StoryListScreen(onStartSession: () -> Unit, onResumeStory: (Story) -> Unit) 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(
             text = stringResource(R.string.story_list_title),
-            style = MaterialTheme.typography.h5
+            style = MaterialTheme.typography.h5,
         )
         Spacer(modifier = Modifier.height(8.dp))
         LazyColumn(modifier = Modifier.weight(1f)) {
@@ -117,7 +129,7 @@ fun StoryListScreen(onStartSession: () -> Unit, onResumeStory: (Story) -> Unit) 
                 items(pending) { story ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
                         Text(text = story.title, modifier = Modifier.weight(1f))
                         Button(onClick = { onResumeStory(story) }) {
@@ -146,7 +158,7 @@ fun StoryListScreen(onStartSession: () -> Unit, onResumeStory: (Story) -> Unit) 
                 items(processed) { story ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
                         Text(text = story.title, modifier = Modifier.weight(1f))
                         Button(onClick = {
@@ -161,16 +173,24 @@ fun StoryListScreen(onStartSession: () -> Unit, onResumeStory: (Story) -> Unit) 
         }
         Button(
             onClick = { onStartSession() },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text(text = stringResource(R.string.start_new_session))
         }
         Spacer(modifier = Modifier.height(8.dp))
         Button(
+            onClick = { onOpenSettings() },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text(text = stringResource(R.string.settings))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
             onClick = { throw RuntimeException("Test Crash") },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text(text = stringResource(R.string.test_crash))
         }
     }
 }
+
