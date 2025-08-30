@@ -39,34 +39,43 @@ class MainActivity : ComponentActivity() {
             } else {
                 when {
                     showRecorder -> {
-                        StoryCreationScreen(
-                            initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
-                            onDone = { segments ->
-                                val context = this@MainActivity
-                                if (storyToResume != null) {
-                                    val updated = storyToResume!!.copy(
-                                        segments = segments.map { it.absolutePath }
-                                    )
-                                    StoryRepository.updateStory(context, updated)
-                                    storyToResume = null
-                                } else {
-                                    val title = getString(
-                                        R.string.default_story_title,
-                                        DateFormat.getDateTimeInstance().format(Date())
-                                    )
-                                    val story = Story(
-                                        id = System.currentTimeMillis(),
-                                        title = title,
-                                        content = "",
-                                        segments = segments.map { it.absolutePath },
-                                        processed = false,
-                                    )
-                                    StoryRepository.addStory(context, story)
+                            StoryCreationScreen(
+                                initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
+                                onDone = { segments, content ->
+                                    val context = this@MainActivity
+                                    val processed = content.isNotBlank()
+                                    val segmentPaths = if (processed) {
+                                        segments.forEach { it.delete() }
+                                        emptyList()
+                                    } else {
+                                        segments.map { it.absolutePath }
+                                    }
+                                    if (storyToResume != null) {
+                                        val updated = storyToResume!!.copy(
+                                            segments = segmentPaths,
+                                            content = content,
+                                            processed = processed,
+                                        )
+                                        StoryRepository.updateStory(context, updated)
+                                        storyToResume = null
+                                    } else {
+                                        val title = getString(
+                                            R.string.default_story_title,
+                                            DateFormat.getDateTimeInstance().format(Date())
+                                        )
+                                        val story = Story(
+                                            id = System.currentTimeMillis(),
+                                            title = title,
+                                            content = content,
+                                            segments = segmentPaths,
+                                            processed = processed,
+                                        )
+                                        StoryRepository.addStory(context, story)
+                                    }
+                                    showRecorder = false
                                 }
-                                showRecorder = false
-                            }
-                        )
-                    }
+                            )
+                        }
                     showSettings -> {
                         SettingsScreen(onBack = { showSettings = false })
                     }
@@ -156,16 +165,26 @@ fun StoryListScreen(
                 item { Text(text = stringResource(R.string.no_stories)) }
             } else {
                 items(processed) { story ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                     ) {
-                        Text(text = story.title, modifier = Modifier.weight(1f))
-                        Button(onClick = {
-                            StoryRepository.deleteStory(context, story)
-                            processed = processed.filter { it.id != story.id }
-                        }) {
-                            Text(text = stringResource(R.string.delete))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(text = story.title, modifier = Modifier.weight(1f))
+                            Button(onClick = {
+                                StoryRepository.deleteStory(context, story)
+                                processed = processed.filter { it.id != story.id }
+                            }) {
+                                Text(text = stringResource(R.string.delete))
+                            }
+                        }
+                        if (story.content.isNotBlank()) {
+                            Text(
+                                text = story.content,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                            )
                         }
                     }
                 }
