@@ -10,4 +10,13 @@
     <string name="re_record">Re-record</string>
     <string name="done">Done</string>
     <string name="segment_number">Segment %1$d</string>
+    <string name="unprocessed_stories_title">Recorded Sessions</string>
+    <string name="processed_stories_title">Finished Stories</string>
+    <string name="resume">Resume</string>
+    <string name="no_unprocessed_stories">No recorded sessions</string>
+    <string name="delete">Delete</string>
+    <string name="transcribing">Transcribing…</string>
+    <string name="transcription_failed">Transcription failed</string>
+    <string name="transcription_label">Transcription: %1$s</string>
+    <string name="test_crash">Test Crash</string>
 </resources>
