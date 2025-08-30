@@ -23,5 +23,6 @@
     <string name="settings_title">Settings</string>
     <string name="transcription_method">Transcription method</string>
     <string name="transcription_method_local">Local service</string>
+    <string name="transcription_method_groq">Groq Whisper Turbo</string>
     <string name="save">Save</string>
 </resources>
