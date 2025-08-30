@@ -18,5 +18,6 @@
     <string name="settings_title">Impostazioni</string>
     <string name="transcription_method">Metodo di trascrizione</string>
     <string name="transcription_method_local">Servizio locale</string>
+    <string name="transcription_method_groq">Groq Whisper Turbo</string>
     <string name="save">Salva</string>
 </resources>

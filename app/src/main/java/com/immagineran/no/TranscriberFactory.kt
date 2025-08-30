@@ -8,6 +8,7 @@ import android.content.Context
 object TranscriberFactory {
     fun create(context: Context, method: TranscriptionMethod): Transcriber = when (method) {
         TranscriptionMethod.LOCAL -> LocalTranscriber(context)
+        TranscriptionMethod.GROQ -> GroqTranscriber()
     }
 }
 
