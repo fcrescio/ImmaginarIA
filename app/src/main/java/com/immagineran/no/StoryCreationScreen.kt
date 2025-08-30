@@ -27,6 +27,8 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
+import com.immagineran.no.LocalTranscriber
+
 @Composable
 fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File>) -> Unit) {
     val context = LocalContext.current
@@ -36,6 +38,7 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
     var currentIndex by remember { mutableStateOf(-1) }
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
+    val transcriber = remember { LocalTranscriber() }
 
     LaunchedEffect(Unit) {
         initialSegments.forEachIndexed { idx, file ->
@@ -62,9 +65,12 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Button(onClick = {
             if (isRecording) {
+                val file = segments[currentIndex]
                 stopRecording(recorder) { recorder = null }
                 transcribeSegment(context, segments[currentIndex], currentIndex, transcriptions)
                 isRecording = false
+                val transcript = transcriber.transcribe(file)
+                Log.d("StoryCreation", "Transcript for ${file.name}: ${transcript ?: "<null>"}")
                 currentIndex = -1
             } else {
                 val permission = Manifest.permission.RECORD_AUDIO
