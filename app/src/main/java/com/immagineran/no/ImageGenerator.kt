@@ -54,11 +54,8 @@ class ImageGenerator(
                     val choices = json.optJSONArray("choices") ?: return@withContext null
                     if (choices.length() == 0) return@withContext null
                     val message = choices.getJSONObject(0).optJSONObject("message") ?: return@withContext null
-                    val content = message.optJSONArray("content") ?: return@withContext null
-                    if (content.length() == 0) return@withContext null
-                    val imgObj = content.getJSONObject(0)
-                    val b64 = imgObj.optString("image_base64")
-                    if (b64.isNotBlank()) {
+                    val b64 = extractBase64(message)
+                    if (b64 != null) {
                         val bytes = Base64.decode(b64, Base64.DEFAULT)
                         file.outputStream().use { it.write(bytes) }
                         return@withContext file.absolutePath
@@ -72,6 +69,27 @@ class ImageGenerator(
             crashlytics.recordException(e)
             null
         }
+    }
+
+    private fun extractBase64(message: JSONObject): String? {
+        message.optJSONArray("images")?.let { images ->
+            if (images.length() > 0) {
+                val url = images.getJSONObject(0)
+                    .optJSONObject("image_url")
+                    ?.optString("url")
+                    ?: ""
+                val b64 = url.substringAfter("base64,", "")
+                if (b64.isNotBlank()) return b64
+            }
+        }
+        message.optJSONArray("content")?.let { content ->
+            if (content.length() > 0) {
+                val imgObj = content.getJSONObject(0)
+                val b64 = imgObj.optString("image_base64")
+                if (b64.isNotBlank()) return b64
+            }
+        }
+        return null
     }
 
     private fun message(text: String): JSONObject = JSONObject().apply {
