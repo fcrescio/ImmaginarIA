@@ -4,6 +4,7 @@ import android.Manifest
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import java.io.File
 
+import com.immagineran.no.LocalTranscriber
+
 @Composable
 fun StoryCreationScreen(onDone: (List<File>) -> Unit) {
     val context = LocalContext.current
@@ -28,6 +31,7 @@ fun StoryCreationScreen(onDone: (List<File>) -> Unit) {
     var currentIndex by remember { mutableStateOf(-1) }
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
+    val transcriber = remember { LocalTranscriber() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -47,8 +51,11 @@ fun StoryCreationScreen(onDone: (List<File>) -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Button(onClick = {
             if (isRecording) {
+                val file = segments[currentIndex]
                 stopRecording(recorder) { recorder = null }
                 isRecording = false
+                val transcript = transcriber.transcribe(file)
+                Log.d("StoryCreation", "Transcript for ${file.name}: ${transcript ?: "<null>"}")
                 currentIndex = -1
             } else {
                 val permission = Manifest.permission.RECORD_AUDIO
