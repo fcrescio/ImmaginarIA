@@ -1,6 +1,7 @@
 package com.immagineran.no
 
 import android.content.Intent
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -60,12 +61,23 @@ fun SettingsScreen(onBack: () -> Unit) {
         Button(
             onClick = {
                 val logs = LlmLogger.getLogFile(context)
-                val text = if (logs.exists()) logs.readText() else ""
+                if (!logs.exists()) logs.createNewFile()
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    logs,
+                )
                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, text)
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.share_llm_logs)))
+                context.startActivity(
+                    Intent.createChooser(
+                        sendIntent,
+                        context.getString(R.string.share_llm_logs),
+                    ),
+                )
             },
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
