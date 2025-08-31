@@ -58,6 +58,11 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.advanced),
+            style = MaterialTheme.typography.h6,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
                 val logs = LlmLogger.getLogFile(context)
@@ -89,6 +94,13 @@ fun SettingsScreen(onBack: () -> Unit) {
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text(text = stringResource(R.string.clear_llm_logs))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = { throw RuntimeException("Test Crash") },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text(text = stringResource(R.string.test_crash))
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(

@@ -40,4 +40,5 @@
     <string name="story_tab">Story</string>
     <string name="share_llm_logs">Share LLM logs</string>
     <string name="clear_llm_logs">Clear LLM logs</string>
+    <string name="advanced">Advanced</string>
 </resources>
