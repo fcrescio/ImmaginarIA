@@ -118,16 +118,16 @@ class SceneBuilder(
         characters: List<CharacterAsset>,
         environments: List<EnvironmentAsset>,
     ): List<Scene> {
-        val charList = characters.joinToString { "${'$'}{it.name}: ${'$'}{it.description}" }
-        val envList = environments.joinToString { "${'$'}{it.name}: ${'$'}{it.description}" }
+        val charList = characters.joinToString { "${it.name}: ${it.description}" }
+        val envList = environments.joinToString { "${it.name}: ${it.description}" }
         val prompt = """
             Given the following story, characters, and environments, split the story into scenes.
             For each scene provide the narrative text, the environment name, and the list of character names present.
             Reply in a JSON array where each item has keys 'text', 'environment', and 'characters'.
             Story:
-            ${'$'}story
-            Characters: ${'$'}charList
-            Environments: ${'$'}envList
+            $story
+            Characters: $charList
+            Environments: $envList
         """.trimIndent()
         val arr = callLLM(prompt) ?: return emptyList()
         val scenes = mutableListOf<Scene>()

@@ -88,7 +88,23 @@ class StoryStitcher(
                 when (parsed) {
                     is String -> parsed
                     is JSONObject, is JSONArray -> parsed.toString()
-                    else -> message?.optString("content")
+                    else -> {
+                        val content = message?.opt("content")
+                        when (content) {
+                            is String -> content
+                            is JSONArray -> {
+                                val sb = buildString {
+                                    for (i in 0 until content.length()) {
+                                        val item = content.optJSONObject(i)
+                                        val text = item?.optString("text")
+                                        if (!text.isNullOrBlank()) append(text)
+                                    }
+                                }
+                                if (sb.isBlank()) null else sb
+                            }
+                            else -> null
+                        }
+                    }
                 }
             }
         }.getOrElse { e ->
