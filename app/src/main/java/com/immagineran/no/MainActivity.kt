@@ -31,6 +31,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 import com.google.firebase.FirebaseApp
 import com.immagineran.no.ui.theme.ImmaginarIATheme
@@ -44,9 +46,12 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colors.background) {
                     var showSplash by remember { mutableStateOf(true) }
                     var showRecorder by remember { mutableStateOf(false) }
+                    var showProcessing by remember { mutableStateOf(false) }
                     var showSettings by remember { mutableStateOf(false) }
                     var storyToResume by remember { mutableStateOf<Story?>(null) }
                     var storyToView by remember { mutableStateOf<Story?>(null) }
+                    var processingProgress by remember { mutableStateOf(0f) }
+                    val processingLogs = remember { mutableStateListOf<String>() }
                     val scope = rememberCoroutineScope()
                     val pipeline = remember {
                         ProcessingPipeline(
@@ -68,6 +73,9 @@ class MainActivity : ComponentActivity() {
                         SplashScreen()
                     } else {
                         when {
+                            showProcessing -> {
+                                ProcessingScreen(progress = processingProgress, logs = processingLogs)
+                            }
                             showRecorder -> {
                                 StoryCreationScreen(
                                     initialTitle = storyToResume?.title ?: getString(
@@ -77,6 +85,7 @@ class MainActivity : ComponentActivity() {
                                     initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
                                     onDone = { segments, transcriptions, title ->
                                         val context = this@MainActivity
+                                        showRecorder = false
                                         scope.launch {
                                             val allTranscribed = transcriptions.all { it != null }
                                             val storyId = storyToResume?.id ?: System.currentTimeMillis()
@@ -86,7 +95,19 @@ class MainActivity : ComponentActivity() {
                                                 ProcessingContext(prompt, transcriptions.filterNotNull(), storyId)
                                             } else null
                                             if (procContext != null) {
-                                                pipeline.run(procContext)
+                                                showProcessing = true
+                                                processingLogs.clear()
+                                                processingProgress = 0f
+                                                withContext(Dispatchers.IO) {
+                                                    pipeline.run(procContext) { current, total, message ->
+                                                        withContext(Dispatchers.Main) {
+                                                            processingProgress = current / total.toFloat()
+                                                            processingLogs.add("Step ${'$'}current/${'$'}total: ${'$'}message")
+                                                        }
+                                                    }
+                                                }
+                                                processingLogs.add(getString(R.string.processing_complete))
+                                                showProcessing = false
                                             }
                                             val content = procContext?.story ?: ""
                                             val processed = content.isNotBlank()
@@ -122,7 +143,6 @@ class MainActivity : ComponentActivity() {
                                                 )
                                                 StoryRepository.addStory(context, story)
                                             }
-                                            showRecorder = false
                                         }
                                     }
                                 )

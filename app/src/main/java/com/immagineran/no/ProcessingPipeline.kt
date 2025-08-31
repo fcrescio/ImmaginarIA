@@ -27,8 +27,14 @@ fun interface ProcessingStep {
  * Simple pipeline executing a list of [ProcessingStep]s sequentially.
  */
 class ProcessingPipeline(private val steps: List<ProcessingStep>) {
-    suspend fun run(context: ProcessingContext): ProcessingContext {
-        steps.forEach { it.process(context) }
+    suspend fun run(
+        context: ProcessingContext,
+        onProgress: suspend (current: Int, total: Int, message: String) -> Unit = { _, _, _ -> }
+    ): ProcessingContext {
+        steps.forEachIndexed { index, step ->
+            step.process(context)
+            onProgress(index + 1, steps.size, step.javaClass.simpleName)
+        }
         return context
     }
 }
