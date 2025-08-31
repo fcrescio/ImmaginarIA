@@ -43,4 +43,6 @@
     <string name="advanced">Avancé</string>
     <string name="edit_title">Modifier le titre</string>
     <string name="save_title">Enregistrer le titre</string>
+    <string name="processing">Traitement</string>
+    <string name="processing_complete">Traitement terminé</string>
 </resources>
