@@ -41,4 +41,6 @@
     <string name="share_llm_logs">Share LLM logs</string>
     <string name="clear_llm_logs">Clear LLM logs</string>
     <string name="advanced">Advanced</string>
+    <string name="edit_title">Edit title</string>
+    <string name="save_title">Save title</string>
 </resources>

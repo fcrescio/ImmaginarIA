@@ -22,6 +22,7 @@ data class Scene(
 data class Story(
     val id: Long,
     val title: String,
+    val timestamp: Long,
     val content: String,
     val segments: List<String> = emptyList(),
     val processed: Boolean = false,
