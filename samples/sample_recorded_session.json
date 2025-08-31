@@ -1,0 +1,14 @@
+{
+    "id": 1,
+    "title": "Sample Recorded Session",
+    "content": "",
+    "segments": [
+        "Once upon a time in a small village, a curious child found a golden key.",
+        "The key opened a dusty chest, revealing a map to a hidden garden.",
+        "Following the map, the child discovered a garden where stories grew on trees."
+    ],
+    "processed": false,
+    "characters": [],
+    "environments": [],
+    "scenes": []
+}
