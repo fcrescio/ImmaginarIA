@@ -8,6 +8,7 @@
     <string name="stop">Ferma</string>
     <string name="play">Riproduci</string>
     <string name="re_record">Riregistra</string>
+    <string name="add_text_segment">Aggiungi testo</string>
     <string name="done">Fatto</string>
     <string name="segment_number">Segmento %1$d</string>
     <string name="unprocessed_stories_title">Sessioni registrate</string>

@@ -80,10 +80,10 @@ class MainActivity : ComponentActivity() {
                                             val content = procContext?.story ?: ""
                                             val processed = content.isNotBlank()
                                             val segmentPaths = if (processed) {
-                                                segments.forEach { it.delete() }
+                                                segments.filterNotNull().forEach { it.delete() }
                                                 emptyList()
                                             } else {
-                                                segments.map { it.absolutePath }
+                                                segments.filterNotNull().map { it.absolutePath }
                                             }
                                             if (storyToResume != null) {
                                                 val updated = storyToResume!!.copy(

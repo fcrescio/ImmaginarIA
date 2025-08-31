@@ -8,6 +8,7 @@
     <string name="stop">Arrêter</string>
     <string name="play">Lire</string>
     <string name="re_record">Réenregistrer</string>
+    <string name="add_text_segment">Ajouter du texte</string>
     <string name="done">Terminer</string>
     <string name="segment_number">Segment %1$d</string>
     <string name="unprocessed_stories_title">Sessions enregistrées</string>
