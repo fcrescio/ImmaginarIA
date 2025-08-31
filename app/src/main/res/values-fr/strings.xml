@@ -41,8 +41,6 @@
     <string name="share_llm_logs">Partager les journaux LLM</string>
     <string name="clear_llm_logs">Effacer les journaux LLM</string>
     <string name="advanced">Avancé</string>
-    <string name="experimental_features">Fonctionnalités expérimentales</string>
-    <string name="use_structured_outputs">Utiliser les sorties structurées</string>
     <string name="edit_title">Modifier le titre</string>
     <string name="save_title">Enregistrer le titre</string>
 </resources>
