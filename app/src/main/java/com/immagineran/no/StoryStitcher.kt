@@ -41,10 +41,26 @@ class StoryStitcher(
                             JSONObject().apply {
                                 put("role", "user")
                                 put("content", content.toString())
-                            }
+                            },
                         )
-                    }
+                    },
                 )
+                if (SettingsManager.useStructuredOutputs(appContext)) {
+                    val schema = JSONObject("{\"type\":\"string\"}")
+                    put(
+                        "response_format",
+                        JSONObject().apply {
+                            put("type", "json_schema")
+                            put(
+                                "json_schema",
+                                JSONObject().apply {
+                                    put("name", "story")
+                                    put("schema", schema)
+                                },
+                            )
+                        },
+                    )
+                }
             }
 
             val reqJson = root.toString()
@@ -68,7 +84,12 @@ class StoryStitcher(
                 val choices = json.optJSONArray("choices") ?: return@withContext null
                 if (choices.length() == 0) return@withContext null
                 val message = choices.getJSONObject(0).optJSONObject("message")
-                message?.optString("content")
+                val parsed = message?.opt("parsed")
+                when (parsed) {
+                    is String -> parsed
+                    is JSONObject, is JSONArray -> parsed.toString()
+                    else -> message?.optString("content")
+                }
             }
         }.getOrElse { e ->
             Log.e("StoryStitcher", "LLM error", e)

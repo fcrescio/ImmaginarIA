@@ -41,6 +41,8 @@
     <string name="share_llm_logs">Condividi log LLM</string>
     <string name="clear_llm_logs">Cancella log LLM</string>
     <string name="advanced">Avanzate</string>
+    <string name="experimental_features">Funzionalità sperimentali</string>
+    <string name="use_structured_outputs">Usa output strutturati</string>
     <string name="edit_title">Modifica titolo</string>
     <string name="save_title">Salva titolo</string>
 </resources>

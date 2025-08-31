@@ -27,12 +27,51 @@ class SceneBuilder(
         runCatching {
             val root = JSONObject().apply {
                 put("model", "mistralai/mistral-nemo")
-                put("messages", JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("role", "user")
-                        put("content", prompt)
-                    })
-                })
+                put(
+                    "messages",
+                    JSONArray().apply {
+                        put(
+                            JSONObject().apply {
+                                put("role", "user")
+                                put("content", prompt)
+                            },
+                        )
+                    },
+                )
+                if (SettingsManager.useStructuredOutputs(appContext)) {
+                    val schema = JSONObject(
+                        """
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "text": { "type": "string" },
+                              "environment": { "type": "string" },
+                              "characters": {
+                                "type": "array",
+                                "items": { "type": "string" }
+                              }
+                            },
+                            "required": ["text", "environment", "characters"]
+                          }
+                        }
+                        """.trimIndent(),
+                    )
+                    put(
+                        "response_format",
+                        JSONObject().apply {
+                            put("type", "json_schema")
+                            put(
+                                "json_schema",
+                                JSONObject().apply {
+                                    put("name", "scenes")
+                                    put("schema", schema)
+                                },
+                            )
+                        },
+                    )
+                }
             }
             val reqJson = root.toString()
             val body = reqJson.toRequestBody("application/json".toMediaType())
@@ -53,10 +92,18 @@ class SceneBuilder(
                 val json = JSONObject(respBody ?: return@withContext null)
                 val choices = json.optJSONArray("choices") ?: return@withContext null
                 if (choices.length() == 0) return@withContext null
-                val content = choices.getJSONObject(0)
-                    .optJSONObject("message")
-                    ?.optString("content") ?: return@withContext null
-                JSONArray(content)
+                val message = choices.getJSONObject(0).optJSONObject("message")
+                    ?: return@withContext null
+                val parsed = message.opt("parsed")
+                when (parsed) {
+                    is JSONArray -> parsed
+                    is JSONObject -> JSONArray().put(parsed)
+                    else -> {
+                        val content = message.optString("content")
+                        if (content.isBlank()) return@withContext null
+                        JSONArray(content)
+                    }
+                }
             }
         }.getOrElse { e ->
             Log.e("SceneBuilder", "LLM error", e)
