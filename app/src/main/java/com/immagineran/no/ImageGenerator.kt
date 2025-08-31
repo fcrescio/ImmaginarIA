@@ -18,10 +18,10 @@ class ImageGenerator(
     private val crashlytics: FirebaseCrashlytics = FirebaseCrashlytics.getInstance(),
 ) {
     /**
-     * Generates an image based on the given [description] and [style].
+     * Generates an image based on the given [prompt].
      * Retries up to five times if the response does not contain an image.
      */
-    suspend fun generate(description: String, style: ImageStyle, file: File): String? = withContext(Dispatchers.IO) {
+    suspend fun generate(prompt: String, file: File): String? = withContext(Dispatchers.IO) {
         val key = BuildConfig.OPENROUTER_API_KEY
         if (key.isBlank()) {
             Log.e("ImageGenerator", "Missing OpenRouter API key")
@@ -30,7 +30,7 @@ class ImageGenerator(
         }
         runCatching {
             val messages = JSONArray().apply {
-                put(message("Generate a ${style.prompt} character sheet from the following description: ${description}"))
+                put(message(prompt))
             }
             repeat(5) { attempt ->
                 val root = JSONObject().apply {
