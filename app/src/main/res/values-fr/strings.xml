@@ -38,4 +38,6 @@
     <string name="style_manga">Manga</string>
     <string name="image_generation_error">Échec de la génération de l\'image</string>
     <string name="story_tab">Histoire</string>
+    <string name="share_llm_logs">Partager les journaux LLM</string>
+    <string name="clear_llm_logs">Effacer les journaux LLM</string>
 </resources>
