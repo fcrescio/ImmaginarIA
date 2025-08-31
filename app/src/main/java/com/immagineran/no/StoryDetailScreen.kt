@@ -216,7 +216,12 @@ private fun FullScreenImage(imagePath: String, onDismiss: () -> Unit) {
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(onClick = onDismiss),
+                contentAlignment = Alignment.Center
+            ) {
                 Image(
                     bitmap = bmp.asImageBitmap(),
                     contentDescription = null,
