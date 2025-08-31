@@ -71,12 +71,14 @@ class ImageGenerationStep(
         val style = SettingsManager.getImageStyle(appContext)
         context.characters = context.characters.mapIndexed { idx, asset ->
             val file = File(dir, "character_${idx}.png")
-            val path = generator.generate(asset.description, style, file)
+            val prompt = PromptTemplates.load(appContext, R.raw.character_image_prompt, style, asset.description)
+            val path = generator.generate(prompt, file)
             asset.copy(image = path)
         }
         context.environments = context.environments.mapIndexed { idx, asset ->
             val file = File(dir, "environment_${idx}.png")
-            val path = generator.generate(asset.description, style, file)
+            val prompt = PromptTemplates.load(appContext, R.raw.environment_image_prompt, style, asset.description)
+            val path = generator.generate(prompt, file)
             asset.copy(image = path)
         }
     }

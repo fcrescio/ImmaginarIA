@@ -29,7 +29,8 @@ class SceneImageGenerationStep(
                     append(scene.characters.joinToString { it.description })
                 }
             }
-            val path = generator.generate(description, style, file)
+            val prompt = PromptTemplates.load(appContext, R.raw.scene_image_prompt, style, description)
+            val path = generator.generate(prompt, file)
             scene.copy(image = path)
         }
     }
