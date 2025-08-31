@@ -81,6 +81,7 @@ object StoryRepository {
                 Story(
                     id = obj.getLong("id"),
                     title = obj.getString("title"),
+                    timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
                     content = obj.optString("content", ""),
                     segments = segments,
                     processed = obj.optBoolean("processed", false),
@@ -135,6 +136,7 @@ object StoryRepository {
             val obj = JSONObject()
             obj.put("id", s.id)
             obj.put("title", s.title)
+            obj.put("timestamp", s.timestamp)
             obj.put("content", s.content)
             obj.put("processed", s.processed)
             val segmentsArray = JSONArray()

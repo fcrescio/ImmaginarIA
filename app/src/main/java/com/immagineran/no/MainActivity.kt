@@ -13,9 +13,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,12 +70,17 @@ class MainActivity : ComponentActivity() {
                         when {
                             showRecorder -> {
                                 StoryCreationScreen(
+                                    initialTitle = storyToResume?.title ?: getString(
+                                        R.string.default_story_title,
+                                        DateFormat.getDateTimeInstance().format(Date())
+                                    ),
                                     initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
-                                    onDone = { segments, transcriptions ->
+                                    onDone = { segments, transcriptions, title ->
                                         val context = this@MainActivity
                                         scope.launch {
                                             val allTranscribed = transcriptions.all { it != null }
                                             val storyId = storyToResume?.id ?: System.currentTimeMillis()
+                                            val timestamp = storyToResume?.timestamp ?: System.currentTimeMillis()
                                             val procContext = if (allTranscribed) {
                                                 val prompt = getString(R.string.story_prompt)
                                                 ProcessingContext(prompt, transcriptions.filterNotNull(), storyId)
@@ -87,6 +98,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                             if (storyToResume != null) {
                                                 val updated = storyToResume!!.copy(
+                                                    title = title,
                                                     segments = segmentPaths,
                                                     content = content,
                                                     processed = processed,
@@ -97,13 +109,10 @@ class MainActivity : ComponentActivity() {
                                                 StoryRepository.updateStory(context, updated)
                                                 storyToResume = null
                                             } else {
-                                                val title = getString(
-                                                    R.string.default_story_title,
-                                                    DateFormat.getDateTimeInstance().format(Date())
-                                                )
                                                 val story = Story(
                                                     id = storyId,
                                                     title = title,
+                                                    timestamp = timestamp,
                                                     content = content,
                                                     segments = segmentPaths,
                                                     processed = processed,
@@ -191,13 +200,28 @@ fun StoryListScreen(
         processed = stories.filter { it.processed }
         pending = stories.filter { !it.processed }
     }
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            text = stringResource(R.string.story_list_title),
-            style = MaterialTheme.typography.h5,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        LazyColumn(modifier = Modifier.weight(1f)) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.story_list_title)) },
+                actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.settings)
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
+            LazyColumn(modifier = Modifier.weight(1f)) {
             item {
                 Text(
                     text = stringResource(R.string.unprocessed_stories_title),
@@ -256,18 +280,12 @@ fun StoryListScreen(
                 }
             }
         }
-        Button(
-            onClick = { onStartSession() },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            Text(text = stringResource(R.string.start_new_session))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { onOpenSettings() },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            Text(text = stringResource(R.string.settings))
+            Button(
+                onClick = { onStartSession() },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Text(text = stringResource(R.string.start_new_session))
+            }
         }
     }
 }

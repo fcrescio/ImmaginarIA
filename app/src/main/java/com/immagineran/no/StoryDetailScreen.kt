@@ -8,10 +8,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.NavigationRail
 import androidx.compose.material.NavigationRailItem
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,12 +23,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.annotation.StringRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import java.text.DateFormat
+import java.util.Date
 
 /**
  * Displays a story's details using a tabbed layout reminiscent of classic starship interfaces.
@@ -34,6 +42,9 @@ import androidx.annotation.StringRes
 @Composable
 fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
     var selectedTab by remember { mutableStateOf(StoryTab.STORY) }
+    var currentStory by remember { mutableStateOf(story) }
+    var editingTitle by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     Row(modifier = Modifier.fillMaxSize()) {
         NavigationRail {
             NavigationRailItem(
@@ -83,21 +94,48 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
                 .padding(16.dp)
         ) {
             Button(onClick = onBack) { Text(stringResource(R.string.back)) }
-            Text(
-                story.title,
-                style = MaterialTheme.typography.h5,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 8.dp)
+            ) {
+                if (editingTitle) {
+                    TextField(
+                        value = currentStory.title,
+                        onValueChange = { currentStory = currentStory.copy(title = it) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = {
+                        StoryRepository.updateStory(context, currentStory)
+                        editingTitle = false
+                    }) {
+                        Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.save_title))
+                    }
+                } else {
+                    Text(
+                        currentStory.title,
+                        style = MaterialTheme.typography.h5,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { editingTitle = true }) {
+                        Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit_title))
+                    }
+                }
+            }
+            Text(
+                text = DateFormat.getDateTimeInstance().format(Date(currentStory.timestamp)),
+                style = MaterialTheme.typography.caption,
+                modifier = Modifier.padding(top = 4.dp)
             )
             Text(
                 text = stringResource(selectedTab.title),
                 style = MaterialTheme.typography.caption,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 8.dp)
             )
             when (selectedTab) {
-                StoryTab.STORY -> StoryContent(story)
-                StoryTab.CHARACTERS -> CharacterList(story.characters)
-                StoryTab.ENVIRONMENTS -> EnvironmentList(story.environments)
-                StoryTab.SCENES -> SceneList(story.scenes)
+                StoryTab.STORY -> StoryContent(currentStory)
+                StoryTab.CHARACTERS -> CharacterList(currentStory.characters)
+                StoryTab.ENVIRONMENTS -> EnvironmentList(currentStory.environments)
+                StoryTab.SCENES -> SceneList(currentStory.scenes)
             }
         }
     }

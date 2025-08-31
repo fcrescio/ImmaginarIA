@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Button
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.*
@@ -21,22 +24,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import kotlinx.coroutines.launch
 
 /**
  * Records audio segments or allows manual text entry for story creation.
  *
+ * @param initialTitle starting title for the story.
  * @param initialSegments pre-recorded audio segments to display.
- * @param onDone callback with recorded files (null for text segments) and
- * transcriptions.
+ * @param onDone callback with recorded files (null for text segments),
+ * transcriptions, and final title.
  */
 @Composable
-fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File?>, List<String?>) -> Unit) {
+fun StoryCreationScreen(
+    initialTitle: String,
+    initialSegments: List<File> = emptyList(),
+    onDone: (List<File?>, List<String?>, String) -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isRecording by remember { mutableStateOf(false) }
     val segments = remember { mutableStateListOf<File?>().apply { addAll(initialSegments) } }
     val transcriptions = remember { mutableStateListOf<String?>().apply { repeat(initialSegments.size) { add(null) } } }
+    var title by remember { mutableStateOf(initialTitle) }
+    var editingTitle by remember { mutableStateOf(false) }
     var currentIndex by remember { mutableStateOf(-1) }
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
@@ -66,6 +79,27 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (editingTitle) {
+                TextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { editingTitle = false }) {
+                    Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.save_title))
+                }
+            } else {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.h6,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { editingTitle = true }) {
+                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit_title))
+                }
+            }
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Button(onClick = {
                 if (isRecording) {
@@ -156,7 +190,7 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
         }
 
         Button(
-            onClick = { onDone(segments.toList(), transcriptions.toList()) },
+            onClick = { onDone(segments.toList(), transcriptions.toList(), title) },
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text(stringResource(R.string.done))
