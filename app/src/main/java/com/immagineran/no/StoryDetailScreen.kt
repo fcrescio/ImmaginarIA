@@ -12,11 +12,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.NavigationRail
 import androidx.compose.material.NavigationRailItem
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,10 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.annotation.StringRes
 
 /**
  * Displays a story's details using a tabbed layout reminiscent of classic starship interfaces.
@@ -43,33 +40,41 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
                 selected = selectedTab == StoryTab.STORY,
                 onClick = { selectedTab = StoryTab.STORY },
                 icon = {
-                    Icon(Icons.Filled.MenuBook, contentDescription = stringResource(R.string.story_tab))
-                },
-                label = { Text(stringResource(R.string.story_tab)) }
+                    Icon(
+                        painterResource(R.drawable.ic_tab_story),
+                        contentDescription = stringResource(R.string.story_tab)
+                    )
+                }
             )
             NavigationRailItem(
                 selected = selectedTab == StoryTab.CHARACTERS,
                 onClick = { selectedTab = StoryTab.CHARACTERS },
                 icon = {
-                    Icon(Icons.Filled.Person, contentDescription = stringResource(R.string.characters_title))
-                },
-                label = { Text(stringResource(R.string.characters_title)) }
+                    Icon(
+                        painterResource(R.drawable.ic_tab_characters),
+                        contentDescription = stringResource(R.string.characters_title)
+                    )
+                }
             )
             NavigationRailItem(
                 selected = selectedTab == StoryTab.ENVIRONMENTS,
                 onClick = { selectedTab = StoryTab.ENVIRONMENTS },
                 icon = {
-                    Icon(Icons.Filled.Public, contentDescription = stringResource(R.string.environments_title))
-                },
-                label = { Text(stringResource(R.string.environments_title)) }
+                    Icon(
+                        painterResource(R.drawable.ic_tab_environments),
+                        contentDescription = stringResource(R.string.environments_title)
+                    )
+                }
             )
             NavigationRailItem(
                 selected = selectedTab == StoryTab.SCENES,
                 onClick = { selectedTab = StoryTab.SCENES },
                 icon = {
-                    Icon(Icons.Filled.Movie, contentDescription = stringResource(R.string.scenes_title))
-                },
-                label = { Text(stringResource(R.string.scenes_title)) }
+                    Icon(
+                        painterResource(R.drawable.ic_tab_scenes),
+                        contentDescription = stringResource(R.string.scenes_title)
+                    )
+                }
             )
         }
         Column(
@@ -83,6 +88,11 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
                 style = MaterialTheme.typography.h5,
                 modifier = Modifier.padding(top = 8.dp)
             )
+            Text(
+                text = stringResource(selectedTab.title),
+                style = MaterialTheme.typography.caption,
+                modifier = Modifier.padding(top = 4.dp)
+            )
             when (selectedTab) {
                 StoryTab.STORY -> StoryContent(story)
                 StoryTab.CHARACTERS -> CharacterList(story.characters)
@@ -93,18 +103,18 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
     }
 }
 
-private enum class StoryTab { STORY, CHARACTERS, ENVIRONMENTS, SCENES }
+private enum class StoryTab(@StringRes val title: Int) {
+    STORY(R.string.story_tab),
+    CHARACTERS(R.string.characters_title),
+    ENVIRONMENTS(R.string.environments_title),
+    SCENES(R.string.scenes_title)
+}
 
 @Composable
 private fun StoryContent(story: Story) {
     if (story.content.isBlank()) return
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        item {
-            Text(stringResource(R.string.story_tab), style = MaterialTheme.typography.h6)
-        }
-        item {
-            Text(story.content, modifier = Modifier.padding(top = 8.dp))
-        }
+        item { Text(story.content) }
     }
 }
 
@@ -112,7 +122,6 @@ private fun StoryContent(story: Story) {
 private fun CharacterList(characters: List<CharacterAsset>) {
     var selectedImage by remember { mutableStateOf<String?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        item { Text(stringResource(R.string.characters_title), style = MaterialTheme.typography.h6) }
         items(characters) { c ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 c.image?.let {
@@ -146,7 +155,6 @@ private fun CharacterList(characters: List<CharacterAsset>) {
 private fun EnvironmentList(environments: List<EnvironmentAsset>) {
     var selectedImage by remember { mutableStateOf<String?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        item { Text(stringResource(R.string.environments_title), style = MaterialTheme.typography.h6) }
         items(environments) { e ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 e.image?.let {
@@ -180,7 +188,6 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
 private fun SceneList(scenes: List<Scene>) {
     var selectedImage by remember { mutableStateOf<String?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        item { Text(stringResource(R.string.scenes_title), style = MaterialTheme.typography.h6) }
         items(scenes) { s ->
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 s.image?.let {
