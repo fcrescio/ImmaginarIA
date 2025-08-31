@@ -269,13 +269,6 @@ fun StoryListScreen(
         ) {
             Text(text = stringResource(R.string.settings))
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { throw RuntimeException("Test Crash") },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            Text(text = stringResource(R.string.test_crash))
-        }
     }
 }
 

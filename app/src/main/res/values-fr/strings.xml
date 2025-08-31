@@ -40,4 +40,5 @@
     <string name="story_tab">Histoire</string>
     <string name="share_llm_logs">Partager les journaux LLM</string>
     <string name="clear_llm_logs">Effacer les journaux LLM</string>
+    <string name="advanced">Avancé</string>
 </resources>
