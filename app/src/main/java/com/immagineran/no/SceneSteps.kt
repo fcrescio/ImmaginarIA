@@ -4,7 +4,8 @@ import android.content.Context
 import java.io.File
 
 class SceneCompositionStep(
-    private val builder: SceneBuilder = SceneBuilder(),
+    private val appContext: Context,
+    private val builder: SceneBuilder = SceneBuilder(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         val story = context.story ?: return
@@ -14,7 +15,7 @@ class SceneCompositionStep(
 
 class SceneImageGenerationStep(
     private val appContext: Context,
-    private val generator: ImageGenerator = ImageGenerator(),
+    private val generator: ImageGenerator = ImageGenerator(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }

@@ -1,5 +1,6 @@
 package com.immagineran.no
 
+import android.content.Context
 import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +13,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class SceneBuilder(
+    private val appContext: Context,
     private val client: OkHttpClient = OkHttpClient(),
     private val crashlytics: FirebaseCrashlytics = FirebaseCrashlytics.getInstance(),
 ) {
@@ -32,7 +34,8 @@ class SceneBuilder(
                     })
                 })
             }
-            val body = root.toString().toRequestBody("application/json".toMediaType())
+            val reqJson = root.toString()
+            val body = reqJson.toRequestBody("application/json".toMediaType())
             val request = Request.Builder()
                 .url("https://openrouter.ai/api/v1/chat/completions")
                 .header("Authorization", "Bearer $key")
@@ -40,12 +43,14 @@ class SceneBuilder(
                 .post(body)
                 .build()
             client.newCall(request).execute().use { resp ->
+                val respBody = resp.body?.string()
+                LlmLogger.log(appContext, "SceneBuilder", reqJson, respBody)
                 if (!resp.isSuccessful) {
                     Log.e("SceneBuilder", "HTTP ${'$'}{resp.code}")
                     crashlytics.log("OpenRouter scene failed: ${'$'}{resp.code}")
                     return@withContext null
                 }
-                val json = JSONObject(resp.body?.string() ?: return@withContext null)
+                val json = JSONObject(respBody ?: return@withContext null)
                 val choices = json.optJSONArray("choices") ?: return@withContext null
                 if (choices.length() == 0) return@withContext null
                 val content = choices.getJSONObject(0)
@@ -55,6 +60,7 @@ class SceneBuilder(
             }
         }.getOrElse { e ->
             Log.e("SceneBuilder", "LLM error", e)
+            LlmLogger.log(appContext, "SceneBuilder", prompt, e.message)
             crashlytics.recordException(e)
             null
         }

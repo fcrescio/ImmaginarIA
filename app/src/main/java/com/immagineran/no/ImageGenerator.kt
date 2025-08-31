@@ -1,5 +1,6 @@
 package com.immagineran.no
 
+import android.content.Context
 import android.util.Base64
 import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -14,6 +15,7 @@ import org.json.JSONObject
 import java.io.File
 
 class ImageGenerator(
+    private val appContext: Context,
     private val client: OkHttpClient = OkHttpClient(),
     private val crashlytics: FirebaseCrashlytics = FirebaseCrashlytics.getInstance(),
 ) {
@@ -37,7 +39,8 @@ class ImageGenerator(
                     put("model", "google/gemini-2.5-flash-image-preview")
                     put("messages", messages)
                 }
-                val body = root.toString().toRequestBody("application/json".toMediaType())
+                val reqJson = root.toString()
+                val body = reqJson.toRequestBody("application/json".toMediaType())
                 val request = Request.Builder()
                     .url("https://openrouter.ai/api/v1/chat/completions")
                     .header("Authorization", "Bearer $key")
@@ -45,12 +48,14 @@ class ImageGenerator(
                     .post(body)
                     .build()
                 client.newCall(request).execute().use { resp ->
+                    val respBody = resp.body?.string()
+                    LlmLogger.log(appContext, "ImageGenerator", reqJson, respBody)
                     if (!resp.isSuccessful) {
                         Log.e("ImageGenerator", "HTTP ${'$'}{resp.code}")
                         crashlytics.log("OpenRouter image failed: ${'$'}{resp.code}")
                         return@withContext null
                     }
-                    val json = JSONObject(resp.body?.string() ?: return@withContext null)
+                    val json = JSONObject(respBody ?: return@withContext null)
                     val choices = json.optJSONArray("choices") ?: return@withContext null
                     if (choices.length() == 0) return@withContext null
                     val message = choices.getJSONObject(0).optJSONObject("message") ?: return@withContext null
@@ -66,6 +71,7 @@ class ImageGenerator(
             null
         }.getOrElse { e ->
             Log.e("ImageGenerator", "Generation error", e)
+            LlmLogger.log(appContext, "ImageGenerator", prompt, e.message)
             crashlytics.recordException(e)
             null
         }

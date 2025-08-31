@@ -1,5 +1,6 @@
 package com.immagineran.no
 
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -54,6 +55,28 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = stringResource(id = style.labelRes))
             }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = {
+                val logs = LlmLogger.getLogFile(context)
+                val text = if (logs.exists()) logs.readText() else ""
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, text)
+                }
+                context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.share_llm_logs)))
+            },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text(text = stringResource(R.string.share_llm_logs))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = { LlmLogger.clear(context) },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text(text = stringResource(R.string.clear_llm_logs))
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(

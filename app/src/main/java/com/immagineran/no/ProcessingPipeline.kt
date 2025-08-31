@@ -37,7 +37,8 @@ class ProcessingPipeline(private val steps: List<ProcessingStep>) {
  * Step that stitches a list of transcribed segments into a story.
  */
 class StoryStitchingStep(
-    private val stitcher: StoryStitcher = StoryStitcher(),
+    private val appContext: Context,
+    private val stitcher: StoryStitcher = StoryStitcher(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         context.story = stitcher.stitch(context.prompt, context.segments)
@@ -45,7 +46,8 @@ class StoryStitchingStep(
 }
 
 class CharacterExtractionStep(
-    private val extractor: StoryAssetExtractor = StoryAssetExtractor(),
+    private val appContext: Context,
+    private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         val story = context.story ?: return
@@ -54,7 +56,8 @@ class CharacterExtractionStep(
 }
 
 class EnvironmentExtractionStep(
-    private val extractor: StoryAssetExtractor = StoryAssetExtractor(),
+    private val appContext: Context,
+    private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         val story = context.story ?: return
@@ -64,7 +67,7 @@ class EnvironmentExtractionStep(
 
 class ImageGenerationStep(
     private val appContext: Context,
-    private val generator: ImageGenerator = ImageGenerator(),
+    private val generator: ImageGenerator = ImageGenerator(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }

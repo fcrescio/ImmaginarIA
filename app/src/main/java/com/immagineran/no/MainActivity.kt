@@ -45,10 +45,10 @@ class MainActivity : ComponentActivity() {
                     val pipeline = remember {
                         ProcessingPipeline(
                             listOf(
-                                StoryStitchingStep(),
-                                CharacterExtractionStep(),
-                                EnvironmentExtractionStep(),
-                                SceneCompositionStep(),
+                                StoryStitchingStep(this@MainActivity),
+                                CharacterExtractionStep(this@MainActivity),
+                                EnvironmentExtractionStep(this@MainActivity),
+                                SceneCompositionStep(this@MainActivity),
                                 ImageGenerationStep(this@MainActivity),
                                 SceneImageGenerationStep(this@MainActivity)
                             )
