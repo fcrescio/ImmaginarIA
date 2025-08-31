@@ -8,6 +8,7 @@
     <string name="stop">Stop</string>
     <string name="play">Play</string>
     <string name="re_record">Re-record</string>
+    <string name="add_text_segment">Add text</string>
     <string name="done">Done</string>
     <string name="segment_number">Segment %1$d</string>
     <string name="unprocessed_stories_title">Recorded Sessions</string>

@@ -1,9 +1,11 @@
 package com.immagineran.no
 
+import java.io.File
+
 import android.Manifest
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
-import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -11,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Button
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,14 +22,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
-import java.io.File
 
+/**
+ * Records audio segments or allows manual text entry for story creation.
+ *
+ * @param initialSegments pre-recorded audio segments to display.
+ * @param onDone callback with recorded files (null for text segments) and
+ * transcriptions.
+ */
 @Composable
-fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File>, List<String?>) -> Unit) {
+fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List<File?>, List<String?>) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isRecording by remember { mutableStateOf(false) }
-    val segments = remember { mutableStateListOf<File>().apply { addAll(initialSegments) } }
+    val segments = remember { mutableStateListOf<File?>().apply { addAll(initialSegments) } }
     val transcriptions = remember { mutableStateListOf<String?>().apply { repeat(initialSegments.size) { add(null) } } }
     var currentIndex by remember { mutableStateOf(-1) }
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
@@ -57,30 +66,41 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Button(onClick = {
-            if (isRecording) {
-                stopRecording(recorder) { recorder = null }
-                transcribeSegment(context, segments[currentIndex], currentIndex, transcriptions, transcriber, scope)
-                isRecording = false
-                currentIndex = -1
-            } else {
-                val permission = Manifest.permission.RECORD_AUDIO
-                if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-                    startRecording(
-                        segments,
-                        transcriptions,
-                        context,
-                        currentIndex,
-                        onRecorder = { recorder = it },
-                        onStart = { isRecording = true },
-                        onIndex = { currentIndex = it }
-                    )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = {
+                if (isRecording) {
+                    stopRecording(recorder) { recorder = null }
+                    segments[currentIndex]?.let {
+                        transcribeSegment(context, it, currentIndex, transcriptions, transcriber, scope)
+                    }
+                    isRecording = false
+                    currentIndex = -1
                 } else {
-                    permissionLauncher.launch(permission)
+                    val permission = Manifest.permission.RECORD_AUDIO
+                    if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+                        startRecording(
+                            segments,
+                            transcriptions,
+                            context,
+                            currentIndex,
+                            onRecorder = { recorder = it },
+                            onStart = { isRecording = true },
+                            onIndex = { currentIndex = it }
+                        )
+                    } else {
+                        permissionLauncher.launch(permission)
+                    }
                 }
+            }) {
+                Text(text = if (isRecording) stringResource(R.string.stop) else stringResource(R.string.record))
             }
-        }) {
-            Text(text = if (isRecording) stringResource(R.string.stop) else stringResource(R.string.record))
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = {
+                segments.add(null)
+                transcriptions.add("")
+            }) {
+                Text(stringResource(R.string.add_text_segment))
+            }
         }
 
         LazyColumn(modifier = Modifier.weight(1f)) {
@@ -94,35 +114,43 @@ fun StoryCreationScreen(initialSegments: List<File> = emptyList(), onDone: (List
                             text = stringResource(R.string.segment_number, index + 1),
                             modifier = Modifier.weight(1f)
                         )
-                        Button(onClick = {
-                            playSegment(file, player) { player = it }
-                        }) {
-                            Text(stringResource(R.string.play))
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = {
-                            startRecording(
-                                segments,
-                                transcriptions,
-                                context,
-                                index,
-                                onRecorder = { recorder = it },
-                                onStart = { isRecording = true },
-                                onIndex = { currentIndex = it }
-                            )
-                        }) {
-                            Text(stringResource(R.string.re_record))
+                        if (file != null) {
+                            Button(onClick = {
+                                playSegment(file, player) { player = it }
+                            }) {
+                                Text(stringResource(R.string.play))
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(onClick = {
+                                startRecording(
+                                    segments,
+                                    transcriptions,
+                                    context,
+                                    index,
+                                    onRecorder = { recorder = it },
+                                    onStart = { isRecording = true },
+                                    onIndex = { currentIndex = it }
+                                )
+                            }) {
+                                Text(stringResource(R.string.re_record))
+                            }
                         }
                     }
                     val t = transcriptions.getOrNull(index)
-                    Text(
-                        text = if (t != null) {
-                            stringResource(R.string.transcription_label, t)
-                        } else {
-                            stringResource(R.string.transcribing)
-                        },
-                        modifier = Modifier.padding(start = 16.dp),
-                    )
+                    if (t != null) {
+                        TextField(
+                            value = t,
+                            onValueChange = { transcriptions[index] = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp)
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.transcribing),
+                            modifier = Modifier.padding(start = 16.dp),
+                        )
+                    }
                 }
             }
         }
@@ -153,7 +181,7 @@ private fun transcribeSegment(
 }
 
 private fun startRecording(
-    segments: MutableList<File>,
+    segments: MutableList<File?>,
     transcriptions: MutableList<String?>,
     context: android.content.Context,
     index: Int,
@@ -163,7 +191,7 @@ private fun startRecording(
 ) {
     val file = File(context.filesDir, "segment_${'$'}{System.currentTimeMillis()}.m4a")
     val actualIndex = if (index >= 0 && index < segments.size) {
-        segments[index].delete()
+        segments[index]?.delete()
         segments[index] = file
         index
     } else {
