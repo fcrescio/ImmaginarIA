@@ -48,23 +48,12 @@ class MainActivity : ComponentActivity() {
                     var showRecorder by remember { mutableStateOf(false) }
                     var showProcessing by remember { mutableStateOf(false) }
                     var showSettings by remember { mutableStateOf(false) }
+                    var showAdvanced by remember { mutableStateOf(false) }
                     var storyToResume by remember { mutableStateOf<Story?>(null) }
                     var storyToView by remember { mutableStateOf<Story?>(null) }
                     var processingProgress by remember { mutableStateOf(0f) }
                     val processingLogs = remember { mutableStateListOf<String>() }
                     val scope = rememberCoroutineScope()
-                    val pipeline = remember {
-                        ProcessingPipeline(
-                            listOf(
-                                StoryStitchingStep(this@MainActivity),
-                                CharacterExtractionStep(this@MainActivity),
-                                EnvironmentExtractionStep(this@MainActivity),
-                                SceneCompositionStep(this@MainActivity),
-                                ImageGenerationStep(this@MainActivity),
-                                SceneImageGenerationStep(this@MainActivity)
-                            )
-                        )
-                    }
                     LaunchedEffect(Unit) {
                         delay(2000)
                         showSplash = false
@@ -99,7 +88,17 @@ class MainActivity : ComponentActivity() {
                                                 processingLogs.clear()
                                                 processingProgress = 0f
                                                 withContext(Dispatchers.IO) {
-                                                    pipeline.run(procContext) { current, total, message ->
+                                                    val steps = mutableListOf<ProcessingStep>(
+                                                        StoryStitchingStep(this@MainActivity),
+                                                        CharacterExtractionStep(this@MainActivity),
+                                                        EnvironmentExtractionStep(this@MainActivity),
+                                                        SceneCompositionStep(this@MainActivity),
+                                                    )
+                                                    if (SettingsManager.isAssetImageGenerationEnabled(this@MainActivity)) {
+                                                        steps.add(ImageGenerationStep(this@MainActivity))
+                                                    }
+                                                    steps.add(SceneImageGenerationStep(this@MainActivity))
+                                                    ProcessingPipeline(steps).run(procContext) { current, total, message ->
                                                         withContext(Dispatchers.Main) {
                                                             processingProgress = current / total.toFloat()
                                                             val stepName = message
@@ -151,8 +150,14 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+                            showAdvanced -> {
+                                AdvancedOptionsScreen(onBack = { showAdvanced = false })
+                            }
                             showSettings -> {
-                                SettingsScreen(onBack = { showSettings = false })
+                                SettingsScreen(
+                                    onBack = { showSettings = false },
+                                    onAdvanced = { showAdvanced = true },
+                                )
                             }
                             storyToView != null -> {
                                 StoryDetailScreen(story = storyToView!!, onBack = { storyToView = null })
