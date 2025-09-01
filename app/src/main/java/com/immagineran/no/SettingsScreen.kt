@@ -1,7 +1,5 @@
 package com.immagineran.no
 
-import android.content.Intent
-import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -15,7 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onAdvanced: () -> Unit) {
     val context = LocalContext.current
     var selectedTranscription by remember { mutableStateOf(SettingsManager.getTranscriptionMethod(context)) }
     var selectedStyle by remember { mutableStateOf(SettingsManager.getImageStyle(context)) }
@@ -58,49 +56,11 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = stringResource(R.string.advanced),
-            style = MaterialTheme.typography.h6,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
         Button(
-            onClick = {
-                val logs = LlmLogger.getLogFile(context)
-                if (!logs.exists()) logs.createNewFile()
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.provider",
-                    logs,
-                )
-                val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                context.startActivity(
-                    Intent.createChooser(
-                        sendIntent,
-                        context.getString(R.string.share_llm_logs),
-                    ),
-                )
-            },
+            onClick = onAdvanced,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
-            Text(text = stringResource(R.string.share_llm_logs))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { LlmLogger.clear(context) },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            Text(text = stringResource(R.string.clear_llm_logs))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { throw RuntimeException("Test Crash") },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            Text(text = stringResource(R.string.test_crash))
+            Text(text = stringResource(R.string.advanced))
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(
