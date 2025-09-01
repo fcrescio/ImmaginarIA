@@ -102,7 +102,11 @@ class MainActivity : ComponentActivity() {
                                                     pipeline.run(procContext) { current, total, message ->
                                                         withContext(Dispatchers.Main) {
                                                             processingProgress = current / total.toFloat()
-                                                            processingLogs.add("Step ${'$'}current/${'$'}total: ${'$'}message")
+                                                            val stepName = message
+                                                                .removeSuffix("Step")
+                                                                .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+                                                                .uppercase()
+                                                            processingLogs.add("[$current/$total] >>> $stepName")
                                                         }
                                                     }
                                                 }
