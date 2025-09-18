@@ -1,11 +1,14 @@
 package com.immagineran.no
 
 import android.content.Context
+import android.content.SharedPreferences
 
 private const val PREFS_NAME = "app_settings"
 private const val KEY_TRANSCRIPTION_METHOD = "transcription_method"
 private const val KEY_IMAGE_STYLE = "image_style"
 private const val KEY_GENERATE_ASSET_IMAGES = "generate_asset_images"
+private const val KEY_GENERATE_CHARACTER_IMAGES = "generate_character_images"
+private const val KEY_GENERATE_ENVIRONMENT_IMAGES = "generate_environment_images"
 
 /**
  * Persists user-configurable settings.
@@ -41,20 +44,60 @@ object SettingsManager {
         prefs.edit().putString(KEY_IMAGE_STYLE, style.name).apply()
     }
 
-    /**
-     * Returns whether character and environment images should be generated.
-     */
-    fun isAssetImageGenerationEnabled(context: Context): Boolean {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean(KEY_GENERATE_ASSET_IMAGES, true)
+    private fun legacyAssetGenerationPreference(prefs: SharedPreferences): Boolean? {
+        return if (prefs.contains(KEY_GENERATE_ASSET_IMAGES)) {
+            prefs.getBoolean(KEY_GENERATE_ASSET_IMAGES, true)
+        } else {
+            null
+        }
     }
 
     /**
-     * Persists the asset image generation preference.
+     * Returns whether character images should be generated.
      */
-    fun setAssetImageGenerationEnabled(context: Context, enabled: Boolean) {
+    fun isCharacterImageGenerationEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_GENERATE_ASSET_IMAGES, enabled).apply()
+        val legacy = legacyAssetGenerationPreference(prefs)
+        return when {
+            prefs.contains(KEY_GENERATE_CHARACTER_IMAGES) ->
+                prefs.getBoolean(KEY_GENERATE_CHARACTER_IMAGES, true)
+
+            legacy != null -> legacy
+
+            else -> true
+        }
+    }
+
+    /**
+     * Persists the character image generation preference.
+     */
+    fun setCharacterImageGenerationEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_GENERATE_CHARACTER_IMAGES, enabled).apply()
+    }
+
+    /**
+     * Returns whether environment images should be generated.
+     */
+    fun isEnvironmentImageGenerationEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val legacy = legacyAssetGenerationPreference(prefs)
+        return when {
+            prefs.contains(KEY_GENERATE_ENVIRONMENT_IMAGES) ->
+                prefs.getBoolean(KEY_GENERATE_ENVIRONMENT_IMAGES, true)
+
+            legacy != null -> legacy
+
+            else -> true
+        }
+    }
+
+    /**
+     * Persists the environment image generation preference.
+     */
+    fun setEnvironmentImageGenerationEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_GENERATE_ENVIRONMENT_IMAGES, enabled).apply()
     }
 
     /**

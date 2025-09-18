@@ -22,7 +22,12 @@ import androidx.core.content.FileProvider
 @Composable
 fun AdvancedOptionsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    var generateImages by remember { mutableStateOf(SettingsManager.isAssetImageGenerationEnabled(context)) }
+    var generateCharacterImages by remember {
+        mutableStateOf(SettingsManager.isCharacterImageGenerationEnabled(context))
+    }
+    var generateEnvironmentImages by remember {
+        mutableStateOf(SettingsManager.isEnvironmentImageGenerationEnabled(context))
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -38,10 +43,28 @@ fun AdvancedOptionsScreen(onBack: () -> Unit) {
                 .padding(vertical = 4.dp),
         ) {
             Text(
-                text = stringResource(R.string.generate_asset_images),
+                text = stringResource(R.string.generate_character_images),
                 modifier = Modifier.weight(1f),
             )
-            Switch(checked = generateImages, onCheckedChange = { generateImages = it })
+            Switch(
+                checked = generateCharacterImages,
+                onCheckedChange = { generateCharacterImages = it },
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.generate_environment_images),
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = generateEnvironmentImages,
+                onCheckedChange = { generateEnvironmentImages = it },
+            )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Button(
@@ -86,7 +109,8 @@ fun AdvancedOptionsScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.weight(1f))
         Button(
             onClick = {
-                SettingsManager.setAssetImageGenerationEnabled(context, generateImages)
+                SettingsManager.setCharacterImageGenerationEnabled(context, generateCharacterImages)
+                SettingsManager.setEnvironmentImageGenerationEnabled(context, generateEnvironmentImages)
                 onBack()
             },
             modifier = Modifier.align(Alignment.CenterHorizontally),

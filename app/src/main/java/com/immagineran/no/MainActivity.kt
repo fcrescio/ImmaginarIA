@@ -91,12 +91,23 @@ class MainActivity : ComponentActivity() {
                                                     val steps = mutableListOf<ProcessingStep>(
                                                         StoryStitchingStep(this@MainActivity),
                                                         CharacterExtractionStep(this@MainActivity),
-                                                        EnvironmentExtractionStep(this@MainActivity),
-                                                        SceneCompositionStep(this@MainActivity),
                                                     )
-                                                    if (SettingsManager.isAssetImageGenerationEnabled(this@MainActivity)) {
-                                                        steps.add(ImageGenerationStep(this@MainActivity))
+                                                    if (
+                                                        SettingsManager.isCharacterImageGenerationEnabled(
+                                                            this@MainActivity
+                                                        )
+                                                    ) {
+                                                        steps.add(CharacterImageGenerationStep(this@MainActivity))
                                                     }
+                                                    steps.add(EnvironmentExtractionStep(this@MainActivity))
+                                                    if (
+                                                        SettingsManager.isEnvironmentImageGenerationEnabled(
+                                                            this@MainActivity
+                                                        )
+                                                    ) {
+                                                        steps.add(EnvironmentImageGenerationStep(this@MainActivity))
+                                                    }
+                                                    steps.add(SceneCompositionStep(this@MainActivity))
                                                     steps.add(SceneImageGenerationStep(this@MainActivity))
                                                     ProcessingPipeline(steps).run(procContext) { current, total, message ->
                                                         withContext(Dispatchers.Main) {
