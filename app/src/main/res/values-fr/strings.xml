@@ -41,7 +41,8 @@
     <string name="share_llm_logs">Partager les journaux LLM</string>
     <string name="clear_llm_logs">Effacer les journaux LLM</string>
     <string name="advanced">Avancé</string>
-    <string name="generate_asset_images">Générer des images de personnages et d\'environnements</string>
+    <string name="generate_character_images">Générer des images de personnages</string>
+    <string name="generate_environment_images">Générer des images d\'environnements</string>
     <string name="edit_title">Modifier le titre</string>
     <string name="save_title">Enregistrer le titre</string>
     <string name="processing">Traitement</string>

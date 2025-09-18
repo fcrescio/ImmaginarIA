@@ -71,11 +71,12 @@ class EnvironmentExtractionStep(
     }
 }
 
-class ImageGenerationStep(
+class CharacterImageGenerationStep(
     private val appContext: Context,
     private val generator: ImageGenerator = ImageGenerator(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
+        if (context.characters.isEmpty()) return
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
         context.characters = context.characters.mapIndexed { idx, asset ->
@@ -84,6 +85,17 @@ class ImageGenerationStep(
             val path = generator.generate(prompt, file)
             asset.copy(image = path)
         }
+    }
+}
+
+class EnvironmentImageGenerationStep(
+    private val appContext: Context,
+    private val generator: ImageGenerator = ImageGenerator(appContext),
+) : ProcessingStep {
+    override suspend fun process(context: ProcessingContext) {
+        if (context.environments.isEmpty()) return
+        val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
+        val style = SettingsManager.getImageStyle(appContext)
         context.environments = context.environments.mapIndexed { idx, asset ->
             val file = File(dir, "environment_${idx}.png")
             val prompt = PromptTemplates.load(appContext, R.raw.environment_image_prompt, style, asset.description)
