@@ -59,11 +59,21 @@ object StoryRepository {
             if (charArray != null) {
                 for (j in 0 until charArray.length()) {
                     val cObj = charArray.optJSONObject(j) ?: continue
+                    val nameEnglish = cObj.optString("name_english").takeIf { it.isNotBlank() }
+                    val descriptionEnglish = cObj.optString("description_english").takeIf { it.isNotBlank() }
+                    val name = cObj.optString("name").takeIf { it.isNotBlank() }
+                        ?: nameEnglish
+                        ?: ""
+                    val description = cObj.optString("description").takeIf { it.isNotBlank() }
+                        ?: descriptionEnglish
+                        ?: ""
                     characters.add(
                         CharacterAsset(
-                            name = cObj.optString("name"),
-                            description = cObj.optString("description"),
-                            image = cObj.optString("image", null)
+                            name = name,
+                            description = description,
+                            image = cObj.optString("image", null),
+                            nameEnglish = nameEnglish,
+                            descriptionEnglish = descriptionEnglish,
                         )
                     )
                 }
@@ -73,11 +83,21 @@ object StoryRepository {
             if (envArray != null) {
                 for (j in 0 until envArray.length()) {
                     val eObj = envArray.optJSONObject(j) ?: continue
+                    val nameEnglish = eObj.optString("name_english").takeIf { it.isNotBlank() }
+                    val descriptionEnglish = eObj.optString("description_english").takeIf { it.isNotBlank() }
+                    val name = eObj.optString("name").takeIf { it.isNotBlank() }
+                        ?: nameEnglish
+                        ?: ""
+                    val description = eObj.optString("description").takeIf { it.isNotBlank() }
+                        ?: descriptionEnglish
+                        ?: ""
                     environments.add(
                         EnvironmentAsset(
-                            name = eObj.optString("name"),
-                            description = eObj.optString("description"),
-                            image = eObj.optString("image", null)
+                            name = name,
+                            description = description,
+                            image = eObj.optString("image", null),
+                            nameEnglish = nameEnglish,
+                            descriptionEnglish = descriptionEnglish,
                         )
                     )
                 }
@@ -89,13 +109,16 @@ object StoryRepository {
                     val sObj = sceneArray.optJSONObject(j) ?: continue
                     val text = sObj.optString("text")
                     val envName = sObj.optString("environment")
-                    val env = environments.find { it.name == envName }
+                    val env = environments.find { environment ->
+                        environment.matchesName(envName)
+                    }
                     val chars = mutableListOf<CharacterAsset>()
                     val names = sObj.optJSONArray("characters")
                     if (names != null) {
                         for (k in 0 until names.length()) {
                             val n = names.optString(k)
-                            characters.find { it.name == n }?.let { chars.add(it) }
+                            characters.find { character -> character.matchesName(n) }
+                                ?.let { chars.add(it) }
                         }
                     }
                     scenes.add(
@@ -182,18 +205,22 @@ object StoryRepository {
             val charArray = JSONArray()
             s.characters.forEach { c ->
                 val cObj = JSONObject()
-                cObj.put("name", c.name)
-                cObj.put("description", c.description)
+                cObj.put("name", c.name.ifBlank { c.displayName })
+                cObj.put("description", c.description.ifBlank { c.displayDescription })
                 c.image?.let { cObj.put("image", it) }
+                c.nameEnglish?.takeIf { it.isNotBlank() }?.let { cObj.put("name_english", it) }
+                c.descriptionEnglish?.takeIf { it.isNotBlank() }?.let { cObj.put("description_english", it) }
                 charArray.put(cObj)
             }
             obj.put("characters", charArray)
             val envArray = JSONArray()
             s.environments.forEach { e ->
                 val eObj = JSONObject()
-                eObj.put("name", e.name)
-                eObj.put("description", e.description)
+                eObj.put("name", e.name.ifBlank { e.displayName })
+                eObj.put("description", e.description.ifBlank { e.displayDescription })
                 e.image?.let { eObj.put("image", it) }
+                e.nameEnglish?.takeIf { it.isNotBlank() }?.let { eObj.put("name_english", it) }
+                e.descriptionEnglish?.takeIf { it.isNotBlank() }?.let { eObj.put("description_english", it) }
                 envArray.put(eObj)
             }
             obj.put("environments", envArray)
@@ -201,9 +228,9 @@ object StoryRepository {
             s.scenes.forEach { scene ->
                 val scObj = JSONObject()
                 scObj.put("text", scene.text)
-                scene.environment?.let { scObj.put("environment", it.name) }
+                scene.environment?.let { scObj.put("environment", it.displayName) }
                 val charNames = JSONArray()
-                scene.characters.forEach { c -> charNames.put(c.name) }
+                scene.characters.forEach { c -> charNames.put(c.displayName) }
                 scObj.put("characters", charNames)
                 scene.image?.let { scObj.put("image", it) }
                 sceneArray.put(scObj)

@@ -88,8 +88,8 @@ class CharacterExtractionStep(
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
-        val story = context.story ?: context.storyEnglish ?: context.storyOriginal ?: return
-        context.characters = extractor.extractCharacters(story)
+        val story = context.storyEnglish ?: context.story ?: context.storyOriginal ?: return
+        context.characters = extractor.extractCharacters(story, context.storyLanguage)
     }
 }
 
@@ -98,8 +98,8 @@ class EnvironmentExtractionStep(
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
-        val story = context.story ?: context.storyEnglish ?: context.storyOriginal ?: return
-        context.environments = extractor.extractEnvironments(story)
+        val story = context.storyEnglish ?: context.story ?: context.storyOriginal ?: return
+        context.environments = extractor.extractEnvironments(story, context.storyLanguage)
     }
 }
 
