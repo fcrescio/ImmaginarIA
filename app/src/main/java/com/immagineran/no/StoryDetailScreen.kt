@@ -2,7 +2,10 @@ package com.immagineran.no
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,8 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,6 +38,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.platform.LocalDensity
 import java.text.DateFormat
 import java.util.Date
 
@@ -158,7 +164,21 @@ private fun StoryContent(story: Story) {
 
 @Composable
 private fun CharacterList(characters: List<CharacterAsset>) {
-    var selectedImage by remember { mutableStateOf<String?>(null) }
+    val galleryItems = remember(characters) {
+        characters.mapNotNull { character ->
+            character.image?.let {
+                FullScreenImageData(
+                    path = it,
+                    title = character.name,
+                    description = character.description
+                )
+            }
+        }
+    }
+    val pathToIndex = remember(galleryItems) {
+        galleryItems.mapIndexed { index, data -> data.path to index }.toMap()
+    }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
         items(characters) { c ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -170,7 +190,11 @@ private fun CharacterList(characters: List<CharacterAsset>) {
                             contentDescription = c.name,
                             modifier = Modifier
                                 .size(64.dp)
-                                .clickable { selectedImage = it }
+                                .clickable {
+                                    pathToIndex[it]?.let { index ->
+                                        selectedIndex = index
+                                    }
+                                }
                         )
                     }
                 }
@@ -184,14 +208,34 @@ private fun CharacterList(characters: List<CharacterAsset>) {
             }
         }
     }
-    selectedImage?.let {
-        FullScreenImage(imagePath = it) { selectedImage = null }
+    val currentIndex = selectedIndex
+    if (currentIndex != null && galleryItems.isNotEmpty()) {
+        FullScreenImageGallery(
+            images = galleryItems,
+            currentIndex = currentIndex,
+            onIndexChange = { selectedIndex = it },
+            onDismiss = { selectedIndex = null }
+        )
     }
 }
 
 @Composable
 private fun EnvironmentList(environments: List<EnvironmentAsset>) {
-    var selectedImage by remember { mutableStateOf<String?>(null) }
+    val galleryItems = remember(environments) {
+        environments.mapNotNull { environment ->
+            environment.image?.let {
+                FullScreenImageData(
+                    path = it,
+                    title = environment.name,
+                    description = environment.description
+                )
+            }
+        }
+    }
+    val pathToIndex = remember(galleryItems) {
+        galleryItems.mapIndexed { index, data -> data.path to index }.toMap()
+    }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
         items(environments) { e ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -203,7 +247,11 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
                             contentDescription = e.name,
                             modifier = Modifier
                                 .size(64.dp)
-                                .clickable { selectedImage = it }
+                                .clickable {
+                                    pathToIndex[it]?.let { index ->
+                                        selectedIndex = index
+                                    }
+                                }
                         )
                     }
                 }
@@ -217,14 +265,34 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
             }
         }
     }
-    selectedImage?.let {
-        FullScreenImage(imagePath = it) { selectedImage = null }
+    val currentIndex = selectedIndex
+    if (currentIndex != null && galleryItems.isNotEmpty()) {
+        FullScreenImageGallery(
+            images = galleryItems,
+            currentIndex = currentIndex,
+            onIndexChange = { selectedIndex = it },
+            onDismiss = { selectedIndex = null }
+        )
     }
 }
 
 @Composable
 private fun SceneList(scenes: List<Scene>) {
-    var selectedImage by remember { mutableStateOf<String?>(null) }
+    val galleryItems = remember(scenes) {
+        scenes.mapNotNull { scene ->
+            scene.image?.let {
+                FullScreenImageData(
+                    path = it,
+                    title = null,
+                    description = scene.text
+                )
+            }
+        }
+    }
+    val pathToIndex = remember(galleryItems) {
+        galleryItems.mapIndexed { index, data -> data.path to index }.toMap()
+    }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
         items(scenes) { s ->
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -237,7 +305,11 @@ private fun SceneList(scenes: List<Scene>) {
                             modifier = Modifier
                                 .height(128.dp)
                                 .fillMaxWidth()
-                                .clickable { selectedImage = it }
+                                .clickable {
+                                    pathToIndex[it]?.let { index ->
+                                        selectedIndex = index
+                                    }
+                                }
                         )
                     }
                 }
@@ -248,31 +320,91 @@ private fun SceneList(scenes: List<Scene>) {
             }
         }
     }
-    selectedImage?.let {
-        FullScreenImage(imagePath = it) { selectedImage = null }
+    val currentIndex = selectedIndex
+    if (currentIndex != null && galleryItems.isNotEmpty()) {
+        FullScreenImageGallery(
+            images = galleryItems,
+            currentIndex = currentIndex,
+            onIndexChange = { selectedIndex = it },
+            onDismiss = { selectedIndex = null }
+        )
     }
 }
 
 @Composable
-private fun FullScreenImage(imagePath: String, onDismiss: () -> Unit) {
-    val bmp = BitmapFactory.decodeFile(imagePath)
-    if (bmp != null) {
-        Dialog(
-            onDismissRequest = onDismiss,
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+private data class FullScreenImageData(
+    val path: String,
+    val title: String?,
+    val description: String?
+)
+
+@Composable
+private fun FullScreenImageGallery(
+    images: List<FullScreenImageData>,
+    currentIndex: Int,
+    onIndexChange: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val imageData = images.getOrNull(currentIndex) ?: return
+    val bitmap = remember(imageData.path) { BitmapFactory.decodeFile(imageData.path) }
+    if (bitmap == null) {
+        onDismiss()
+        return
+    }
+    val density = LocalDensity.current
+    val swipeThresholdPx = remember(density) { with(density) { 72.dp.toPx() } }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.9f))
+                .pointerInput(currentIndex, images.size) {
+                    var totalDrag = 0f
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { _, dragAmount ->
+                            totalDrag += dragAmount
+                        },
+                        onDragEnd = {
+                            when {
+                                totalDrag > swipeThresholdPx && currentIndex > 0 ->
+                                    onIndexChange(currentIndex - 1)
+                                totalDrag < -swipeThresholdPx && currentIndex < images.lastIndex ->
+                                    onIndexChange(currentIndex + 1)
+                            }
+                            totalDrag = 0f
+                        },
+                        onDragCancel = { totalDrag = 0f }
+                    )
+                }
+                .pointerInput(onDismiss) {
+                    detectTapGestures(onTap = { onDismiss() })
+                },
+            contentAlignment = Alignment.Center
         ) {
-            Box(
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = imageData.title,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(onClick = onDismiss),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.8f),
+                contentScale = ContentScale.Fit
+            )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(16.dp)
             ) {
-                Image(
-                    bitmap = bmp.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
+                imageData.title?.let {
+                    Text(it, color = Color.White, style = MaterialTheme.typography.h6)
+                }
+                imageData.description?.let {
+                    Text(it, color = Color.White, style = MaterialTheme.typography.body2)
+                }
             }
         }
     }
