@@ -19,7 +19,7 @@ object SettingsManager {
         val name = prefs.getString(KEY_TRANSCRIPTION_METHOD, null)
         return name?.let {
             runCatching { TranscriptionMethod.valueOf(it) }.getOrNull()
-        } ?: TranscriptionMethod.LOCAL
+        } ?: TranscriptionMethod.GROQ
     }
 
     fun setTranscriptionMethod(context: Context, method: TranscriptionMethod) {
@@ -60,11 +60,11 @@ object SettingsManager {
         val legacy = legacyAssetGenerationPreference(prefs)
         return when {
             prefs.contains(KEY_GENERATE_CHARACTER_IMAGES) ->
-                prefs.getBoolean(KEY_GENERATE_CHARACTER_IMAGES, true)
+                prefs.getBoolean(KEY_GENERATE_CHARACTER_IMAGES, false)
 
             legacy != null -> legacy
 
-            else -> true
+            else -> false
         }
     }
 
@@ -84,11 +84,11 @@ object SettingsManager {
         val legacy = legacyAssetGenerationPreference(prefs)
         return when {
             prefs.contains(KEY_GENERATE_ENVIRONMENT_IMAGES) ->
-                prefs.getBoolean(KEY_GENERATE_ENVIRONMENT_IMAGES, true)
+                prefs.getBoolean(KEY_GENERATE_ENVIRONMENT_IMAGES, false)
 
             legacy != null -> legacy
 
-            else -> true
+            else -> false
         }
     }
 
