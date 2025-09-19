@@ -262,8 +262,8 @@ private fun CharacterList(characters: List<CharacterAsset>) {
             character.image?.let {
                 FullScreenImageData(
                     path = it,
-                    title = character.name,
-                    description = character.description
+                    title = character.displayName,
+                    description = character.displayDescription
                 )
             }
         }
@@ -280,7 +280,7 @@ private fun CharacterList(characters: List<CharacterAsset>) {
                     if (bmp != null) {
                         Image(
                             bitmap = bmp.asImageBitmap(),
-                            contentDescription = c.name,
+                            contentDescription = c.displayName,
                             modifier = Modifier
                                 .size(64.dp)
                                 .clickable {
@@ -292,8 +292,8 @@ private fun CharacterList(characters: List<CharacterAsset>) {
                     }
                 }
                 Column(modifier = Modifier.padding(start = 8.dp)) {
-                    Text(c.name, style = MaterialTheme.typography.subtitle1)
-                    Text(c.description)
+                    Text(c.displayName, style = MaterialTheme.typography.subtitle1)
+                    Text(c.displayDescription)
                     if (c.image == null) {
                         Text(stringResource(R.string.image_generation_error))
                     }
@@ -319,8 +319,8 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
             environment.image?.let {
                 FullScreenImageData(
                     path = it,
-                    title = environment.name,
-                    description = environment.description
+                    title = environment.displayName,
+                    description = environment.displayDescription
                 )
             }
         }
@@ -337,7 +337,7 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
                     if (bmp != null) {
                         Image(
                             bitmap = bmp.asImageBitmap(),
-                            contentDescription = e.name,
+                            contentDescription = e.displayName,
                             modifier = Modifier
                                 .size(64.dp)
                                 .clickable {
@@ -349,8 +349,8 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
                     }
                 }
                 Column(modifier = Modifier.padding(start = 8.dp)) {
-                    Text(e.name, style = MaterialTheme.typography.subtitle1)
-                    Text(e.description)
+                    Text(e.displayName, style = MaterialTheme.typography.subtitle1)
+                    Text(e.displayDescription)
                     if (e.image == null) {
                         Text(stringResource(R.string.image_generation_error))
                     }

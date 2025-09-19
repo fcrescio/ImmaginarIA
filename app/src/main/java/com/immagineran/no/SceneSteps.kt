@@ -24,10 +24,10 @@ class SceneImageGenerationStep(
             val file = File(dir, "scene_${idx}.png")
             val description = buildString {
                 append(scene.text)
-                scene.environment?.let { append(" Environment: ${it.description}.") }
+                scene.environment?.let { append(" Environment: ${it.displayDescription}.") }
                 if (scene.characters.isNotEmpty()) {
                     append(" Characters: ")
-                    append(scene.characters.joinToString { it.description })
+                    append(scene.characters.joinToString { it.displayDescription })
                 }
             }
             val prompt = PromptTemplates.load(appContext, R.raw.scene_image_prompt, style, description)

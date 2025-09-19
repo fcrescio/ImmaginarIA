@@ -109,31 +109,69 @@ class StoryAssetExtractor(
         }
     }
 
-    suspend fun extractCharacters(story: String): List<CharacterAsset> {
-        val prompt = "Extract the characters from the following story. For each character provide a short graphic description. Reply in JSON array of objects with keys 'name' and 'description'. Story:\n$story"
+    suspend fun extractCharacters(story: String, sourceLanguage: String? = null): List<CharacterAsset> {
+        val languageHint = sourceLanguage?.takeIf { it.isNotBlank() && !it.equals("english", ignoreCase = true) }
+            ?.let {
+                "The original story language is $it. Translate names and descriptions into natural English while preserving culturally specific details."
+            }
+            ?: "Ensure every name and description you output is written in clear, natural English."
+        val prompt = """
+            Extract the distinct characters from the following story rewrite.
+            Provide concise, visually descriptive summaries for each character.
+            $languageHint
+            Respond with a JSON array of objects where each item has the keys "name" and "description" and both values are in English.
+            Story (English rewrite):
+            $story
+        """.trimIndent()
         val arr = callLLM(prompt) ?: return emptyList()
         val result = mutableListOf<CharacterAsset>()
         for (i in 0 until arr.length()) {
             val obj = arr.optJSONObject(i) ?: continue
-            val name = obj.optString("name")
-            val desc = obj.optString("description")
-            if (name.isNotBlank() && desc.isNotBlank()) {
-                result.add(CharacterAsset(name, desc))
+            val name = obj.optString("name").trim()
+            val desc = obj.optString("description").trim()
+            if (name.isNotEmpty() && desc.isNotEmpty()) {
+                result.add(
+                    CharacterAsset(
+                        name = name,
+                        description = desc,
+                        nameEnglish = name,
+                        descriptionEnglish = desc,
+                    )
+                )
             }
         }
         return result
     }
 
-    suspend fun extractEnvironments(story: String): List<EnvironmentAsset> {
-        val prompt = "Extract the environments from the following story. For each environment provide a short graphic description. Reply in JSON array of objects with keys 'name' and 'description'. Story:\n$story"
+    suspend fun extractEnvironments(story: String, sourceLanguage: String? = null): List<EnvironmentAsset> {
+        val languageHint = sourceLanguage?.takeIf { it.isNotBlank() && !it.equals("english", ignoreCase = true) }
+            ?.let {
+                "The original story language is $it. Translate location names and descriptions into natural English while keeping important cultural nuances."
+            }
+            ?: "Ensure every environment name and description you output is written in clear, natural English."
+        val prompt = """
+            Extract the key environments and settings from the following story rewrite.
+            Provide concise, visually descriptive summaries for each environment.
+            $languageHint
+            Respond with a JSON array of objects where each item has the keys "name" and "description" and both values are in English.
+            Story (English rewrite):
+            $story
+        """.trimIndent()
         val arr = callLLM(prompt) ?: return emptyList()
         val result = mutableListOf<EnvironmentAsset>()
         for (i in 0 until arr.length()) {
             val obj = arr.optJSONObject(i) ?: continue
-            val name = obj.optString("name")
-            val desc = obj.optString("description")
-            if (name.isNotBlank() && desc.isNotBlank()) {
-                result.add(EnvironmentAsset(name, desc))
+            val name = obj.optString("name").trim()
+            val desc = obj.optString("description").trim()
+            if (name.isNotEmpty() && desc.isNotEmpty()) {
+                result.add(
+                    EnvironmentAsset(
+                        name = name,
+                        description = desc,
+                        nameEnglish = name,
+                        descriptionEnglish = desc,
+                    )
+                )
             }
         }
         return result

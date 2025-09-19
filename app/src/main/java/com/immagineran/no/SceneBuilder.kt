@@ -118,8 +118,8 @@ class SceneBuilder(
         characters: List<CharacterAsset>,
         environments: List<EnvironmentAsset>,
     ): List<Scene> {
-        val charList = characters.joinToString { "${it.name}: ${it.description}" }
-        val envList = environments.joinToString { "${it.name}: ${it.description}" }
+        val charList = characters.joinToString { "${it.displayName}: ${it.displayDescription}" }
+        val envList = environments.joinToString { "${it.displayName}: ${it.displayDescription}" }
         val prompt = """
             Given the following story, characters, and environments, split the story into scenes.
             For each scene provide the narrative text, the environment name, and the list of character names present.
@@ -135,13 +135,13 @@ class SceneBuilder(
             val obj = arr.optJSONObject(i) ?: continue
             val text = obj.optString("text")
             val envName = obj.optString("environment")
-            val env = environments.find { it.name.equals(envName, ignoreCase = true) }
+            val env = environments.find { it.matchesName(envName) }
             val charNames = obj.optJSONArray("characters")
             val chars = mutableListOf<CharacterAsset>()
             if (charNames != null) {
                 for (j in 0 until charNames.length()) {
                     val name = charNames.optString(j)
-                    characters.find { it.name.equals(name, ignoreCase = true) }?.let { chars.add(it) }
+                    characters.find { it.matchesName(name) }?.let { chars.add(it) }
                 }
             }
             if (text.isNotBlank()) {
