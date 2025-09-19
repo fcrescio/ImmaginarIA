@@ -29,8 +29,33 @@ class StoryStitcher(
         }
 
         runCatching {
-            val content = StringBuilder(prompt)
-            segments.forEach { content.append("\n- ").append(it) }
+            val content = buildString {
+                appendLine(
+                    "You are a multilingual storyteller. Analyze the provided prompt and " +
+                        "transcript segments to detect the primary language used."
+                )
+                appendLine(
+                    "Write a cohesive narrative in that same language, keeping the voice and " +
+                        "details consistent."
+                )
+                appendLine(
+                    "Also produce an English translation of the narrative."
+                )
+                appendLine(
+                    "Respond strictly with JSON containing the keys 'language', 'story_original', " +
+                        "and 'story_english'."
+                )
+                appendLine("Language should be identified using either the common name or ISO 639-1 code.")
+                appendLine()
+                appendLine("Prompt:")
+                appendLine(prompt)
+                appendLine()
+                appendLine("Segments:")
+                segments.forEach { segment ->
+                    append("- ")
+                    appendLine(segment)
+                }
+            }
 
             val root = JSONObject().apply {
                 put("model", "mistralai/mistral-nemo")
@@ -46,7 +71,19 @@ class StoryStitcher(
                     },
                 )
                 if (SettingsManager.useStructuredOutputs(appContext)) {
-                    val schema = JSONObject("{\"type\":\"string\"}")
+                    val schema = JSONObject(
+                        """
+                        {
+                          "type": "object",
+                          "properties": {
+                            "language": { "type": "string" },
+                            "story_original": { "type": "string" },
+                            "story_english": { "type": "string" }
+                          },
+                          "required": ["language", "story_original", "story_english"]
+                        }
+                        """.trimIndent(),
+                    )
                     put(
                         "response_format",
                         JSONObject().apply {
@@ -86,22 +123,13 @@ class StoryStitcher(
                 val message = choices.getJSONObject(0).optJSONObject("message")
                 val parsed = message?.opt("parsed")
                 when (parsed) {
-                    is String -> parsed
                     is JSONObject, is JSONArray -> parsed.toString()
+                    is String -> parsed
                     else -> {
                         val content = message?.opt("content")
                         when (content) {
+                            is JSONObject, is JSONArray -> content.toString()
                             is String -> content
-                            is JSONArray -> {
-                                val sb = buildString {
-                                    for (i in 0 until content.length()) {
-                                        val item = content.optJSONObject(i)
-                                        val text = item?.optString("text")
-                                        if (!text.isNullOrBlank()) append(text)
-                                    }
-                                }
-                                if (sb.isBlank()) null else sb
-                            }
                             else -> null
                         }
                     }

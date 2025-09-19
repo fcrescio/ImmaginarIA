@@ -158,7 +158,13 @@ private enum class StoryTab(@StringRes val title: Int) {
 
 @Composable
 private fun StoryContent(story: Story) {
-    val paragraphs = remember(story.content) { parseStoryboardParagraphs(story.content) }
+    val paragraphs = remember(
+        story.storyOriginal,
+        story.storyEnglish,
+        story.content,
+    ) {
+        parseStoryboardParagraphs(story)
+    }
     if (paragraphs.isEmpty()) return
     LazyColumn(
         modifier = Modifier
@@ -172,7 +178,24 @@ private fun StoryContent(story: Story) {
     }
 }
 
-private fun parseStoryboardParagraphs(content: String): List<String> {
+private fun parseStoryboardParagraphs(story: Story): List<String> {
+    val candidates = listOfNotNull(
+        story.storyOriginal?.takeIf { it.isNotBlank() },
+        story.storyEnglish?.takeIf { it.isNotBlank() },
+        story.content.takeIf { it.isNotBlank() },
+    )
+
+    candidates.forEach { candidate ->
+        val paragraphs = extractParagraphs(candidate)
+        if (paragraphs.isNotEmpty()) {
+            return paragraphs
+        }
+    }
+
+    return emptyList()
+}
+
+private fun extractParagraphs(content: String): List<String> {
     val trimmed = content.trim()
     if (trimmed.isBlank()) return emptyList()
 

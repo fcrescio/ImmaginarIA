@@ -123,8 +123,10 @@ class MainActivity : ComponentActivity() {
                                                 processingLogs.add(getString(R.string.processing_complete))
                                                 showProcessing = false
                                             }
-                                            val content = procContext?.story ?: ""
-                                            val processed = content.isNotBlank()
+                                            val content = procContext?.storyJson
+                                                ?: procContext?.story
+                                                ?: ""
+                                            val processed = !procContext?.story.isNullOrBlank()
                                             val segmentPaths = if (processed) {
                                                 segments.filterNotNull().forEach { it.delete() }
                                                 emptyList()
@@ -136,6 +138,12 @@ class MainActivity : ComponentActivity() {
                                                     title = title,
                                                     segments = segmentPaths,
                                                     content = content,
+                                                    language = procContext?.storyLanguage
+                                                        ?: storyToResume!!.language,
+                                                    storyOriginal = procContext?.storyOriginal
+                                                        ?: storyToResume!!.storyOriginal,
+                                                    storyEnglish = procContext?.storyEnglish
+                                                        ?: storyToResume!!.storyEnglish,
                                                     processed = processed,
                                                     characters = procContext?.characters ?: emptyList(),
                                                     environments = procContext?.environments ?: emptyList(),
@@ -149,6 +157,9 @@ class MainActivity : ComponentActivity() {
                                                     title = title,
                                                     timestamp = timestamp,
                                                     content = content,
+                                                    language = procContext?.storyLanguage,
+                                                    storyOriginal = procContext?.storyOriginal,
+                                                    storyEnglish = procContext?.storyEnglish,
                                                     segments = segmentPaths,
                                                     processed = processed,
                                                     characters = procContext?.characters ?: emptyList(),

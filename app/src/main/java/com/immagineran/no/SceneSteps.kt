@@ -8,7 +8,7 @@ class SceneCompositionStep(
     private val builder: SceneBuilder = SceneBuilder(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
-        val story = context.story ?: return
+        val story = context.story ?: context.storyEnglish ?: context.storyOriginal ?: return
         context.scenes = builder.buildScenes(story, context.characters, context.environments)
     }
 }
