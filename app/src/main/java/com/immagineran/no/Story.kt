@@ -41,11 +41,18 @@ data class EnvironmentAsset(
 }
 
 data class Scene(
-    val text: String,
+    val captionOriginal: String,
+    val captionEnglish: String,
     val environment: EnvironmentAsset? = null,
     val characters: List<CharacterAsset> = emptyList(),
     val image: String? = null,
-)
+) {
+    val displayCaptionOriginal: String
+        get() = captionOriginal.takeIf { it.isNotBlank() } ?: captionEnglish
+
+    val displayCaptionEnglish: String
+        get() = captionEnglish.takeIf { it.isNotBlank() } ?: captionOriginal
+}
 
 data class Story(
     val id: Long,

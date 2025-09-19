@@ -8,8 +8,17 @@ class SceneCompositionStep(
     private val builder: SceneBuilder = SceneBuilder(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
-        val story = context.story ?: context.storyEnglish ?: context.storyOriginal ?: return
-        context.scenes = builder.buildScenes(story, context.characters, context.environments)
+        val storyOriginal = context.storyOriginal ?: context.story
+        val storyEnglish = context.storyEnglish ?: context.story
+        if (storyOriginal.isNullOrBlank() && storyEnglish.isNullOrBlank()) {
+            return
+        }
+        context.scenes = builder.buildScenes(
+            storyOriginal = storyOriginal,
+            storyEnglish = storyEnglish,
+            characters = context.characters,
+            environments = context.environments,
+        )
     }
 }
 
@@ -23,7 +32,7 @@ class SceneImageGenerationStep(
         context.scenes = context.scenes.mapIndexed { idx, scene ->
             val file = File(dir, "scene_${idx}.png")
             val description = buildString {
-                append(scene.text)
+                append(scene.displayCaptionEnglish)
                 scene.environment?.let { append(" Environment: ${it.displayDescription}.") }
                 if (scene.characters.isNotEmpty()) {
                     append(" Characters: ")

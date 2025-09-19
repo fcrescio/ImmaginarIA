@@ -107,7 +107,11 @@ object StoryRepository {
             if (sceneArray != null) {
                 for (j in 0 until sceneArray.length()) {
                     val sObj = sceneArray.optJSONObject(j) ?: continue
-                    val text = sObj.optString("text")
+                    val captionOriginal = sObj.optString("caption_original").takeIf { it.isNotBlank() }
+                        ?: sObj.optString("text").takeIf { it.isNotBlank() }
+                        ?: ""
+                    val captionEnglish = sObj.optString("caption_english").takeIf { it.isNotBlank() }
+                        ?: captionOriginal
                     val envName = sObj.optString("environment")
                     val env = environments.find { environment ->
                         environment.matchesName(envName)
@@ -123,7 +127,8 @@ object StoryRepository {
                     }
                     scenes.add(
                         Scene(
-                            text = text,
+                            captionOriginal = captionOriginal,
+                            captionEnglish = captionEnglish,
                             environment = env,
                             characters = chars,
                             image = sObj.optString("image", null)
@@ -227,7 +232,9 @@ object StoryRepository {
             val sceneArray = JSONArray()
             s.scenes.forEach { scene ->
                 val scObj = JSONObject()
-                scObj.put("text", scene.text)
+                scObj.put("caption_original", scene.captionOriginal)
+                scObj.put("caption_english", scene.captionEnglish)
+                scObj.put("text", scene.displayCaptionOriginal)
                 scene.environment?.let { scObj.put("environment", it.displayName) }
                 val charNames = JSONArray()
                 scene.characters.forEach { c -> charNames.put(c.displayName) }
