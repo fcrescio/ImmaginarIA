@@ -377,7 +377,7 @@ private fun SceneList(scenes: List<Scene>) {
                 FullScreenImageData(
                     path = it,
                     title = null,
-                    description = scene.displayCaptionEnglish
+                    description = scene.displayCaptionOriginal
                 )
             }
         }
