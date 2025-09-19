@@ -377,7 +377,7 @@ private fun SceneList(scenes: List<Scene>) {
                 FullScreenImageData(
                     path = it,
                     title = null,
-                    description = scene.text
+                    description = scene.displayCaptionEnglish
                 )
             }
         }
@@ -406,7 +406,7 @@ private fun SceneList(scenes: List<Scene>) {
                         )
                     }
                 }
-                Text(s.text, modifier = Modifier.padding(top = 4.dp))
+                Text(s.displayCaptionOriginal, modifier = Modifier.padding(top = 4.dp))
                 if (s.image == null) {
                     Text(stringResource(R.string.image_generation_error))
                 }

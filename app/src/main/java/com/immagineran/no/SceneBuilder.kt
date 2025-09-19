@@ -46,14 +46,15 @@ class SceneBuilder(
                           "items": {
                             "type": "object",
                             "properties": {
-                              "text": { "type": "string" },
+                              "caption_original": { "type": "string" },
+                              "caption_english": { "type": "string" },
                               "environment": { "type": "string" },
                               "characters": {
                                 "type": "array",
                                 "items": { "type": "string" }
                               }
                             },
-                            "required": ["text", "environment", "characters"]
+                            "required": ["caption_original", "environment", "characters"]
                           }
                         }
                         """.trimIndent(),
@@ -114,26 +115,88 @@ class SceneBuilder(
     }
 
     suspend fun buildScenes(
-        story: String,
+        storyOriginal: String?,
+        storyEnglish: String?,
         characters: List<CharacterAsset>,
         environments: List<EnvironmentAsset>,
     ): List<Scene> {
-        val charList = characters.joinToString { "${it.displayName}: ${it.displayDescription}" }
-        val envList = environments.joinToString { "${it.displayName}: ${it.displayDescription}" }
-        val prompt = """
-            Given the following story, characters, and environments, split the story into scenes.
-            For each scene provide the narrative text, the environment name, and the list of character names present.
-            Reply in a JSON array where each item has keys 'text', 'environment', and 'characters'.
-            Story:
-            $story
-            Characters: $charList
-            Environments: $envList
-        """.trimIndent()
+        val original = storyOriginal?.takeIf { it.isNotBlank() }
+        val providedEnglish = storyEnglish?.takeIf { it.isNotBlank() }
+        val english = providedEnglish ?: original
+        if (original.isNullOrBlank() && english.isNullOrBlank()) {
+            return emptyList()
+        }
+
+        fun CharacterAsset.englishName(): String =
+            nameEnglish?.takeIf { it.isNotBlank() } ?: displayName
+
+        fun CharacterAsset.englishDescription(): String =
+            descriptionEnglish?.takeIf { it.isNotBlank() } ?: displayDescription
+
+        fun EnvironmentAsset.englishName(): String =
+            nameEnglish?.takeIf { it.isNotBlank() } ?: displayName
+
+        fun EnvironmentAsset.englishDescription(): String =
+            descriptionEnglish?.takeIf { it.isNotBlank() } ?: displayDescription
+
+        val charList = characters.joinToString(separator = "\n") { asset ->
+            buildString {
+                val englishName = asset.englishName()
+                append("- ${englishName}: ${asset.englishDescription()}")
+                val originalName = asset.name.takeIf { it.isNotBlank() && !it.equals(englishName, ignoreCase = true) }
+                if (originalName != null) {
+                    append(" (Original name: ${originalName})")
+                }
+            }
+        }.ifBlank { "- None" }
+
+        val envList = environments.joinToString(separator = "\n") { asset ->
+            buildString {
+                val englishName = asset.englishName()
+                append("- ${englishName}: ${asset.englishDescription()}")
+                val originalName = asset.name.takeIf { it.isNotBlank() && !it.equals(englishName, ignoreCase = true) }
+                if (originalName != null) {
+                    append(" (Original name: ${originalName})")
+                }
+            }
+        }.ifBlank { "- None" }
+
+        val prompt = buildString {
+            appendLine("Given the following story, split it into coherent scenes.")
+            appendLine("For each scene reply with: caption_original (the narrative in the original language), caption_english (the same narrative in English), environment (choose an English name from the list), and characters (an array of English character names from the list).")
+            appendLine("Use only the English names exactly as provided when listing environments or characters.")
+            if (original == null && english != null) {
+                appendLine("Only the English translation is available; repeat it for caption_original as well.")
+            } else if (original != null && providedEnglish == null) {
+                appendLine("Only the original narrative is available; translate it into English for caption_english.")
+            }
+            original?.let {
+                appendLine()
+                appendLine("Original story:")
+                appendLine(it)
+            }
+            english?.let {
+                appendLine()
+                appendLine("English translation:")
+                appendLine(it)
+            }
+            appendLine()
+            appendLine("Characters (English reference):")
+            appendLine(charList)
+            appendLine()
+            appendLine("Environments (English reference):")
+            appendLine(envList)
+        }
         val arr = callLLM(prompt) ?: return emptyList()
         val scenes = mutableListOf<Scene>()
         for (i in 0 until arr.length()) {
             val obj = arr.optJSONObject(i) ?: continue
-            val text = obj.optString("text")
+            val captionOriginal = obj.optString("caption_original").takeIf { it.isNotBlank() }
+                ?: obj.optString("text").takeIf { it.isNotBlank() }
+            val captionEnglish = obj.optString("caption_english").takeIf { it.isNotBlank() }
+                ?: captionOriginal
+            val narrativeOriginal = captionOriginal ?: captionEnglish ?: continue
+            val narrativeEnglish = captionEnglish ?: narrativeOriginal
             val envName = obj.optString("environment")
             val env = environments.find { it.matchesName(envName) }
             val charNames = obj.optJSONArray("characters")
@@ -144,10 +207,11 @@ class SceneBuilder(
                     characters.find { it.matchesName(name) }?.let { chars.add(it) }
                 }
             }
-            if (text.isNotBlank()) {
+            if (narrativeOriginal.isNotBlank() || narrativeEnglish.isNotBlank()) {
                 scenes.add(
                     Scene(
-                        text = text,
+                        captionOriginal = narrativeOriginal,
+                        captionEnglish = narrativeEnglish,
                         environment = env,
                         characters = chars,
                     )
