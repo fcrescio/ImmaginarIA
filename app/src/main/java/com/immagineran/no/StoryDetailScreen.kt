@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import java.text.DateFormat
 import java.util.Date
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Displays a story's details using a tabbed layout reminiscent of classic starship interfaces.
@@ -150,10 +152,78 @@ private enum class StoryTab(@StringRes val title: Int) {
 
 @Composable
 private fun StoryContent(story: Story) {
-    if (story.content.isBlank()) return
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        item { Text(story.content) }
+    val paragraphs = remember(story.content) { parseStoryboardParagraphs(story.content) }
+    if (paragraphs.isEmpty()) return
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(paragraphs) { paragraph ->
+            Text(paragraph)
+        }
     }
+}
+
+private fun parseStoryboardParagraphs(content: String): List<String> {
+    val trimmed = content.trim()
+    if (trimmed.isBlank()) return emptyList()
+
+    val narrativeKeys = listOf("storyboard", "story", "text", "summary", "synopsis")
+    val paragraphs = mutableListOf<String>()
+
+    fun MutableList<String>.addParagraphs(raw: String) {
+        raw.split(Regex("\\r?\\n\\s*\\r?\\n"))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .forEach { paragraph ->
+                if (!contains(paragraph)) {
+                    add(paragraph)
+                }
+            }
+    }
+
+    fun MutableList<String>.extract(value: Any?) {
+        when (value) {
+            is String -> addParagraphs(value)
+            is JSONArray -> {
+                for (i in 0 until value.length()) {
+                    extract(value.opt(i))
+                }
+            }
+            is JSONObject -> {
+                narrativeKeys.forEach { key ->
+                    if (value.has(key)) {
+                        extract(value.opt(key))
+                    }
+                }
+            }
+        }
+    }
+
+    runCatching { JSONObject(trimmed) }.getOrNull()?.let { obj ->
+        narrativeKeys.forEach { key ->
+            if (obj.has(key)) {
+                paragraphs.extract(obj.opt(key))
+            }
+        }
+        if (paragraphs.isNotEmpty()) {
+            return paragraphs
+        }
+    }
+
+    runCatching { JSONArray(trimmed) }.getOrNull()?.let { array ->
+        for (i in 0 until array.length()) {
+            paragraphs.extract(array.opt(i))
+        }
+        if (paragraphs.isNotEmpty()) {
+            return paragraphs
+        }
+    }
+
+    paragraphs.addParagraphs(trimmed)
+    return paragraphs
 }
 
 @Composable
