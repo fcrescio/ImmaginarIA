@@ -26,7 +26,7 @@ class StoryAssetExtractor(
         }
         runCatching {
             val root = JSONObject().apply {
-                put("model", "mistralai/mistral-nemo")
+                put("model", "openrouter/sonoma-sky-alpha")
                 put(
                     "messages",
                     JSONArray().apply {

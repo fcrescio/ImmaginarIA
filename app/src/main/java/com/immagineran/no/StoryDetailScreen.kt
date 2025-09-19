@@ -401,7 +401,7 @@ private fun SceneList(scenes: List<Scene>) {
     }
 }
 
-@Composable
+//@Composable
 private data class FullScreenImageData(
     val path: String,
     val title: String?,
