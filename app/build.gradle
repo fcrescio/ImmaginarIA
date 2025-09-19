@@ -35,8 +35,8 @@ android {
         applicationId "com.immagineran.no"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "0.1"
+        versionCode readConf('VERSION_CODE', '1').toInteger()
+        versionName readConf('VERSION_NAME', "0.1")
         buildConfigField "String", "GROQ_API_KEY", "\"${readConf('GROQ_API_KEY', '')}\""
         buildConfigField "String", "OPENROUTER_API_KEY", "\"${readConf('OPENROUTER_API_KEY', '')}\""
     }
