@@ -1,9 +1,10 @@
 package com.immagineran.no
 
+import java.io.File
+
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
 
 object StoryRepository {
     private const val FILE_NAME = "stories.json"
@@ -23,6 +24,36 @@ object StoryRepository {
                     segments.add(segmentsArray.getString(j))
                 }
             }
+            val content = obj.optString("content", "")
+            var language = obj.optString("language").takeIf { it.isNotBlank() }
+            var storyOriginal = obj.optString("story_original").takeIf { it.isNotBlank() }
+            var storyEnglish = obj.optString("story_english").takeIf { it.isNotBlank() }
+
+            if ((language == null || storyOriginal == null || storyEnglish == null) && content.isNotBlank()) {
+                runCatching { JSONObject(content) }.getOrNull()?.let { storyObj ->
+                    if (language == null) {
+                        language = storyObj.optString("language").takeIf { it.isNotBlank() }
+                    }
+                    if (storyOriginal == null) {
+                        storyOriginal = storyObj.optString("story_original").takeIf { it.isNotBlank() }
+                    }
+                    if (storyEnglish == null) {
+                        storyEnglish = storyObj.optString("story_english").takeIf { it.isNotBlank() }
+                    }
+                }
+            }
+
+            if (storyOriginal.isNullOrBlank() && storyEnglish.isNullOrBlank() && content.isNotBlank()) {
+                storyOriginal = content
+                storyEnglish = content
+            }
+            if (storyEnglish.isNullOrBlank()) {
+                storyEnglish = storyOriginal
+            }
+            if (storyOriginal.isNullOrBlank()) {
+                storyOriginal = storyEnglish
+            }
+
             val characters = mutableListOf<CharacterAsset>()
             val charArray = obj.optJSONArray("characters")
             if (charArray != null) {
@@ -82,7 +113,10 @@ object StoryRepository {
                     id = obj.getLong("id"),
                     title = obj.getString("title"),
                     timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
-                    content = obj.optString("content", ""),
+                    content = content,
+                    language = language,
+                    storyOriginal = storyOriginal,
+                    storyEnglish = storyEnglish,
                     segments = segments,
                     processed = obj.optBoolean("processed", false),
                     characters = characters,
@@ -139,6 +173,9 @@ object StoryRepository {
             obj.put("timestamp", s.timestamp)
             obj.put("content", s.content)
             obj.put("processed", s.processed)
+            s.language?.let { obj.put("language", it) }
+            s.storyOriginal?.let { obj.put("story_original", it) }
+            s.storyEnglish?.let { obj.put("story_english", it) }
             val segmentsArray = JSONArray()
             s.segments.forEach { segmentsArray.put(it) }
             obj.put("segments", segmentsArray)

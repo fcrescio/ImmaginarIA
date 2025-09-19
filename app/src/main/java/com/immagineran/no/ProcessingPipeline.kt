@@ -1,7 +1,9 @@
 package com.immagineran.no
 
-import android.content.Context
 import java.io.File
+
+import android.content.Context
+import org.json.JSONObject
 
 /**
  * Container for data moving through the processing pipeline.
@@ -11,6 +13,10 @@ data class ProcessingContext(
     val segments: List<String>,
     val id: Long,
     var story: String? = null,
+    var storyLanguage: String? = null,
+    var storyOriginal: String? = null,
+    var storyEnglish: String? = null,
+    var storyJson: String? = null,
     var characters: List<CharacterAsset> = emptyList(),
     var environments: List<EnvironmentAsset> = emptyList(),
     var scenes: List<Scene> = emptyList(),
@@ -47,7 +53,33 @@ class StoryStitchingStep(
     private val stitcher: StoryStitcher = StoryStitcher(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
-        context.story = stitcher.stitch(context.prompt, context.segments)
+        val stitched = stitcher.stitch(context.prompt, context.segments)
+        context.storyJson = stitched
+        if (stitched.isNullOrBlank()) {
+            context.story = null
+            context.storyLanguage = null
+            context.storyOriginal = null
+            context.storyEnglish = null
+            return
+        }
+
+        val json = runCatching { JSONObject(stitched) }.getOrNull()
+        if (json != null) {
+            context.storyLanguage = json.optString("language").takeIf { it.isNotBlank() }
+            context.storyOriginal = json.optString("story_original").takeIf { it.isNotBlank() }
+            context.storyEnglish = json.optString("story_english").takeIf { it.isNotBlank() }
+        } else {
+            context.storyLanguage = null
+            context.storyOriginal = stitched
+            context.storyEnglish = stitched
+        }
+        if (context.storyEnglish.isNullOrBlank()) {
+            context.storyEnglish = context.storyOriginal
+        }
+        if (context.storyOriginal.isNullOrBlank()) {
+            context.storyOriginal = context.storyEnglish
+        }
+        context.story = context.storyEnglish ?: context.storyOriginal
     }
 }
 
@@ -56,7 +88,7 @@ class CharacterExtractionStep(
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
-        val story = context.story ?: return
+        val story = context.story ?: context.storyEnglish ?: context.storyOriginal ?: return
         context.characters = extractor.extractCharacters(story)
     }
 }
@@ -66,7 +98,7 @@ class EnvironmentExtractionStep(
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext) {
-        val story = context.story ?: return
+        val story = context.story ?: context.storyEnglish ?: context.storyOriginal ?: return
         context.environments = extractor.extractEnvironments(story)
     }
 }
