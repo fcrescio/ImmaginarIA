@@ -47,4 +47,8 @@
     <string name="save_title">Save title</string>
     <string name="processing">Processing</string>
     <string name="processing_complete">Processing complete</string>
+    <string name="export_story">Export</string>
+    <string name="share_story_chooser_title">Share “%1$s”</string>
+    <string name="export_story_message">Storyboard exported from ImmaginarIA: %1$s</string>
+    <string name="export_story_error">Unable to export this story.</string>
 </resources>

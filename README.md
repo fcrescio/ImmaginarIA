@@ -8,6 +8,8 @@ ImmaginarIA is an experimental Android application where players build a collabo
 - `docs/` – Documentation and design notes
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the high level architecture.
+Export package details are documented in
+[docs/ARCHIVE_FORMAT.md](docs/ARCHIVE_FORMAT.md).
 
 ## Building
 

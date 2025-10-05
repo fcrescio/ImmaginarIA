@@ -4,7 +4,9 @@ import java.io.File
 import java.text.DateFormat
 import java.util.Date
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -29,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -244,8 +247,10 @@ fun StoryListScreen(
     onViewStory: (Story) -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var processed by remember { mutableStateOf(emptyList<Story>()) }
     var pending by remember { mutableStateOf(emptyList<Story>()) }
+    var exportingStoryId by remember { mutableStateOf<Long?>(null) }
     LaunchedEffect(Unit) {
         val stories = StoryRepository.getStories(context)
         processed = stories.filter { it.processed }
@@ -319,6 +324,63 @@ fun StoryListScreen(
                         Text(text = story.title, modifier = Modifier.weight(1f))
                         Button(onClick = { onViewStory(story) }) {
                             Text(text = stringResource(R.string.view))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    exportingStoryId = story.id
+                                    try {
+                                        val file = StoryExporter.export(context, story)
+                                        if (file != null) {
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.provider",
+                                                file,
+                                            )
+                                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                                type = "application/zip"
+                                                putExtra(Intent.EXTRA_STREAM, uri)
+                                                putExtra(Intent.EXTRA_SUBJECT, story.title)
+                                                putExtra(
+                                                    Intent.EXTRA_TEXT,
+                                                    context.getString(
+                                                        R.string.export_story_message,
+                                                        story.title,
+                                                    ),
+                                                )
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                            context.startActivity(
+                                                Intent.createChooser(
+                                                    sendIntent,
+                                                    context.getString(
+                                                        R.string.share_story_chooser_title,
+                                                        story.title,
+                                                    ),
+                                                ),
+                                            )
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.export_story_error),
+                                                Toast.LENGTH_LONG,
+                                            ).show()
+                                        }
+                                    } catch (_: Exception) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.export_story_error),
+                                            Toast.LENGTH_LONG,
+                                        ).show()
+                                    } finally {
+                                        exportingStoryId = null
+                                    }
+                                }
+                            },
+                            enabled = exportingStoryId != story.id,
+                        ) {
+                            Text(text = stringResource(R.string.export_story))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(onClick = {
