@@ -15,6 +15,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.*
@@ -78,122 +79,172 @@ fun StoryCreationScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (editingTitle) {
-                TextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = { editingTitle = false }) {
-                    Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.save_title))
-                }
-            } else {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.h6,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = { editingTitle = true }) {
-                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit_title))
-                }
+    val stopRecordingAction = {
+        stopRecording(recorder) { recorder = null }
+        if (currentIndex in segments.indices) {
+            segments[currentIndex]?.let {
+                transcribeSegment(context, it, currentIndex, transcriptions, transcriber, scope)
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = {
-                if (isRecording) {
-                    stopRecording(recorder) { recorder = null }
-                    segments[currentIndex]?.let {
-                        transcribeSegment(context, it, currentIndex, transcriptions, transcriber, scope)
-                    }
-                    isRecording = false
-                    currentIndex = -1
-                } else {
-                    val permission = Manifest.permission.RECORD_AUDIO
-                    if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-                        startRecording(
-                            segments,
-                            transcriptions,
-                            context,
-                            currentIndex,
-                            onRecorder = { recorder = it },
-                            onStart = { isRecording = true },
-                            onIndex = { currentIndex = it }
-                        )
-                    } else {
-                        permissionLauncher.launch(permission)
-                    }
-                }
-            }) {
-                Text(text = if (isRecording) stringResource(R.string.stop) else stringResource(R.string.record))
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = {
-                segments.add(null)
-                transcriptions.add("")
-            }) {
-                Text(stringResource(R.string.add_text_segment))
-            }
-        }
+        isRecording = false
+        currentIndex = -1
+    }
 
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            itemsIndexed(segments) { index, file ->
-                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.segment_number, index + 1),
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (file != null) {
-                            Button(onClick = {
-                                playSegment(file, player) { player = it }
-                            }) {
-                                Text(stringResource(R.string.play))
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(onClick = {
-                                startRecording(
-                                    segments,
-                                    transcriptions,
-                                    context,
-                                    index,
-                                    onRecorder = { recorder = it },
-                                    onStart = { isRecording = true },
-                                    onIndex = { currentIndex = it }
-                                )
-                            }) {
-                                Text(stringResource(R.string.re_record))
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (editingTitle) {
+                    TextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { editingTitle = false }) {
+                        Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.save_title))
+                    }
+                } else {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.h6,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { editingTitle = true }) {
+                        Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit_title))
+                    }
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = {
+                        val permission = Manifest.permission.RECORD_AUDIO
+                        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+                            startRecording(
+                                segments,
+                                transcriptions,
+                                context,
+                                currentIndex,
+                                onRecorder = { recorder = it },
+                                onStart = { isRecording = true },
+                                onIndex = { currentIndex = it }
+                            )
+                        } else {
+                            permissionLauncher.launch(permission)
+                        }
+                    },
+                    enabled = !isRecording,
+                ) {
+                    Text(text = stringResource(R.string.record))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = {
+                    segments.add(null)
+                    transcriptions.add("")
+                }) {
+                    Text(stringResource(R.string.add_text_segment))
+                }
+            }
+
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                itemsIndexed(segments) { index, file ->
+                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.segment_number, index + 1),
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (file != null) {
+                                Button(
+                                    onClick = {
+                                        playSegment(file, player) { player = it }
+                                    },
+                                    enabled = !isRecording,
+                                ) {
+                                    Text(stringResource(R.string.play))
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        startRecording(
+                                            segments,
+                                            transcriptions,
+                                            context,
+                                            index,
+                                            onRecorder = { recorder = it },
+                                            onStart = { isRecording = true },
+                                            onIndex = { currentIndex = it }
+                                        )
+                                    },
+                                    enabled = !isRecording,
+                                ) {
+                                    Text(stringResource(R.string.re_record))
+                                }
                             }
                         }
-                    }
-                    val t = transcriptions.getOrNull(index)
-                    if (t != null) {
-                        TextField(
-                            value = t,
-                            onValueChange = { transcriptions[index] = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp)
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.transcribing),
-                            modifier = Modifier.padding(start = 16.dp),
-                        )
+                        val t = transcriptions.getOrNull(index)
+                        if (t != null) {
+                            TextField(
+                                value = t,
+                                onValueChange = { transcriptions[index] = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp)
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.transcribing),
+                                modifier = Modifier.padding(start = 16.dp),
+                            )
+                        }
                     }
                 }
             }
+
+            Button(
+                onClick = { onDone(segments.toList(), transcriptions.toList(), title) },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Text(stringResource(R.string.done))
+            }
         }
 
-        Button(
-            onClick = { onDone(segments.toList(), transcriptions.toList(), title) },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
+        if (isRecording) {
+            RecordingOverlay(onStop = stopRecordingAction)
+        }
+    }
+}
+
+@Composable
+private fun RecordingOverlay(onStop: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colors.surface.copy(alpha = 0.95f),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(stringResource(R.string.done))
+            Text(
+                text = stringResource(R.string.recording_in_progress),
+                style = MaterialTheme.typography.h5,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onStop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(96.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.stop),
+                    style = MaterialTheme.typography.h4,
+                )
+            }
         }
     }
 }

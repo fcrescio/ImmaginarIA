@@ -6,6 +6,7 @@
     <string name="default_story_title">Session started %1$s</string>
     <string name="record">Record</string>
     <string name="stop">Stop</string>
+    <string name="recording_in_progress">Recording in progress</string>
     <string name="play">Play</string>
     <string name="re_record">Re-record</string>
     <string name="add_text_segment">Add text</string>
