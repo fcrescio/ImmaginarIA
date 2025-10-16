@@ -45,6 +45,17 @@
     <string name="generate_environment_images">Genera immagini delle ambientazioni</string>
     <string name="edit_title">Modifica titolo</string>
     <string name="save_title">Salva titolo</string>
+    <string name="recording_in_progress">Registrazione in corso</string>
+    <string name="cancel">Annulla</string>
+    <string name="delete_completed_story_title">Eliminare la storia completata?</string>
+    <string name="delete_completed_story_message">Sei sicuro di voler eliminare “%1$s”? Questa azione è irreversibile.</string>
     <string name="processing">Elaborazione</string>
     <string name="processing_complete">Elaborazione completata</string>
+    <string name="processing_character_image_progress">Generazione immagine personaggio %1$d di %2$d…</string>
+    <string name="processing_environment_image_progress">Generazione immagine ambientazione %1$d di %2$d…</string>
+    <string name="processing_scene_image_progress">Generazione immagine scena %1$d di %2$d…</string>
+    <string name="export_story">Esporta</string>
+    <string name="share_story_chooser_title">Condividi “%1$s”</string>
+    <string name="export_story_message">Storyboard esportato da ImmaginarIA: %1$s</string>
+    <string name="export_story_error">Impossibile esportare questa storia.</string>
 </resources>

@@ -7,7 +7,7 @@ class SceneCompositionStep(
     private val appContext: Context,
     private val builder: SceneBuilder = SceneBuilder(appContext),
 ) : ProcessingStep {
-    override suspend fun process(context: ProcessingContext) {
+    override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val storyOriginal = context.storyOriginal ?: context.story
         val storyEnglish = context.storyEnglish ?: context.story
         if (storyOriginal.isNullOrBlank() && storyEnglish.isNullOrBlank()) {
@@ -26,10 +26,13 @@ class SceneImageGenerationStep(
     private val appContext: Context,
     private val generator: ImageGenerator = ImageGenerator(appContext),
 ) : ProcessingStep {
-    override suspend fun process(context: ProcessingContext) {
+    override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
-        context.scenes = context.scenes.mapIndexed { idx, scene ->
+        val total = context.scenes.size
+        val updated = mutableListOf<Scene>()
+        context.scenes.forEachIndexed { idx, scene ->
+            reporter(appContext.getString(R.string.processing_scene_image_progress, idx + 1, total))
             val file = File(dir, "scene_${idx}.png")
             val description = buildString {
                 append(scene.displayCaptionEnglish)
@@ -41,8 +44,9 @@ class SceneImageGenerationStep(
             }
             val prompt = PromptTemplates.load(appContext, R.raw.scene_image_prompt, style, description)
             val path = generator.generate(prompt, file)
-            scene.copy(image = path)
+            updated += scene.copy(image = path)
         }
+        context.scenes = updated
     }
 }
 
