@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -21,6 +22,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -251,6 +253,7 @@ fun StoryListScreen(
     var processed by remember { mutableStateOf(emptyList<Story>()) }
     var pending by remember { mutableStateOf(emptyList<Story>()) }
     var exportingStoryId by remember { mutableStateOf<Long?>(null) }
+    var storyPendingDeletion by remember { mutableStateOf<Story?>(null) }
     LaunchedEffect(Unit) {
         val stories = StoryRepository.getStories(context)
         processed = stories.filter { it.processed }
@@ -383,22 +386,49 @@ fun StoryListScreen(
                             Text(text = stringResource(R.string.export_story))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = {
-                            StoryRepository.deleteStory(context, story)
-                            processed = processed.filter { it.id != story.id }
-                        }) {
+                        Button(onClick = { storyPendingDeletion = story }) {
                             Text(text = stringResource(R.string.delete))
                         }
                     }
                 }
             }
         }
-            Button(
-                onClick = { onStartSession() },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            ) {
-                Text(text = stringResource(R.string.start_new_session))
-            }
+        val storyToDelete = storyPendingDeletion
+        if (storyToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { storyPendingDeletion = null },
+                title = { Text(text = stringResource(R.string.delete_completed_story_title)) },
+                text = {
+                    Text(
+                        text = stringResource(
+                            R.string.delete_completed_story_message,
+                            storyToDelete.title
+                        )
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        StoryRepository.deleteStory(context, storyToDelete)
+                        processed = processed.filter { it.id != storyToDelete.id }
+                        storyPendingDeletion = null
+                    }) {
+                        Text(text = stringResource(R.string.delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { storyPendingDeletion = null }) {
+                        Text(text = stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+
+        Button(
+            onClick = { onStartSession() },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text(text = stringResource(R.string.start_new_session))
+        }
         }
     }
 }
