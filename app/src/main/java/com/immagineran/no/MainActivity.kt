@@ -114,16 +114,24 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                     steps.add(SceneCompositionStep(this@MainActivity))
                                                     steps.add(SceneImageGenerationStep(this@MainActivity))
-                                                    ProcessingPipeline(steps).run(procContext) { current, total, message ->
-                                                        withContext(Dispatchers.Main) {
-                                                            processingProgress = current / total.toFloat()
-                                                            val stepName = message
-                                                                .removeSuffix("Step")
-                                                                .replace(Regex("([a-z])([A-Z])"), "$1 $2")
-                                                                .uppercase()
-                                                            processingLogs.add("[$current/$total] >>> $stepName")
+                                                    ProcessingPipeline(steps).run(
+                                                        procContext,
+                                                        onProgress = { current, total, message ->
+                                                            withContext(Dispatchers.Main) {
+                                                                processingProgress = current / total.toFloat()
+                                                                val stepName = message
+                                                                    .removeSuffix("Step")
+                                                                    .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+                                                                    .uppercase()
+                                                                processingLogs.add("[$current/$total] >>> $stepName")
+                                                            }
+                                                        },
+                                                        onLog = { logMessage ->
+                                                            withContext(Dispatchers.Main) {
+                                                                processingLogs.add(logMessage)
+                                                            }
                                                         }
-                                                    }
+                                                    )
                                                 }
                                                 processingLogs.add(getString(R.string.processing_complete))
                                                 showProcessing = false

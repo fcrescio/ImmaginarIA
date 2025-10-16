@@ -22,11 +22,13 @@ data class ProcessingContext(
     var scenes: List<Scene> = emptyList(),
 )
 
+typealias ProgressReporter = suspend (String) -> Unit
+
 /**
  * A single step in a processing pipeline.
  */
 fun interface ProcessingStep {
-    suspend fun process(context: ProcessingContext)
+    suspend fun process(context: ProcessingContext, reporter: ProgressReporter)
 }
 
 /**
@@ -35,10 +37,11 @@ fun interface ProcessingStep {
 class ProcessingPipeline(private val steps: List<ProcessingStep>) {
     suspend fun run(
         context: ProcessingContext,
-        onProgress: suspend (current: Int, total: Int, message: String) -> Unit = { _, _, _ -> }
+        onProgress: suspend (current: Int, total: Int, message: String) -> Unit = { _, _, _ -> },
+        onLog: ProgressReporter = {}
     ): ProcessingContext {
         steps.forEachIndexed { index, step ->
-            step.process(context)
+            step.process(context, onLog)
             onProgress(index + 1, steps.size, step.javaClass.simpleName)
         }
         return context
@@ -52,7 +55,7 @@ class StoryStitchingStep(
     private val appContext: Context,
     private val stitcher: StoryStitcher = StoryStitcher(appContext),
 ) : ProcessingStep {
-    override suspend fun process(context: ProcessingContext) {
+    override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val stitched = stitcher.stitch(context.prompt, context.segments)
         context.storyJson = stitched
         if (stitched.isNullOrBlank()) {
@@ -87,7 +90,7 @@ class CharacterExtractionStep(
     private val appContext: Context,
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
-    override suspend fun process(context: ProcessingContext) {
+    override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val story = context.storyEnglish ?: context.story ?: context.storyOriginal ?: return
         context.characters = extractor.extractCharacters(story, context.storyLanguage)
     }
@@ -97,7 +100,7 @@ class EnvironmentExtractionStep(
     private val appContext: Context,
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
 ) : ProcessingStep {
-    override suspend fun process(context: ProcessingContext) {
+    override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val story = context.storyEnglish ?: context.story ?: context.storyOriginal ?: return
         context.environments = extractor.extractEnvironments(story, context.storyLanguage)
     }
@@ -107,16 +110,20 @@ class CharacterImageGenerationStep(
     private val appContext: Context,
     private val generator: ImageGenerator = ImageGenerator(appContext),
 ) : ProcessingStep {
-    override suspend fun process(context: ProcessingContext) {
+    override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         if (context.characters.isEmpty()) return
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
-        context.characters = context.characters.mapIndexed { idx, asset ->
+        val total = context.characters.size
+        val updated = mutableListOf<CharacterAsset>()
+        context.characters.forEachIndexed { idx, asset ->
+            reporter(appContext.getString(R.string.processing_character_image_progress, idx + 1, total))
             val file = File(dir, "character_${idx}.png")
             val prompt = PromptTemplates.load(appContext, R.raw.character_image_prompt, style, asset.description)
             val path = generator.generate(prompt, file)
-            asset.copy(image = path)
+            updated += asset.copy(image = path)
         }
+        context.characters = updated
     }
 }
 
@@ -124,16 +131,20 @@ class EnvironmentImageGenerationStep(
     private val appContext: Context,
     private val generator: ImageGenerator = ImageGenerator(appContext),
 ) : ProcessingStep {
-    override suspend fun process(context: ProcessingContext) {
+    override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         if (context.environments.isEmpty()) return
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
-        context.environments = context.environments.mapIndexed { idx, asset ->
+        val total = context.environments.size
+        val updated = mutableListOf<EnvironmentAsset>()
+        context.environments.forEachIndexed { idx, asset ->
+            reporter(appContext.getString(R.string.processing_environment_image_progress, idx + 1, total))
             val file = File(dir, "environment_${idx}.png")
             val prompt = PromptTemplates.load(appContext, R.raw.environment_image_prompt, style, asset.description)
             val path = generator.generate(prompt, file)
-            asset.copy(image = path)
+            updated += asset.copy(image = path)
         }
+        context.environments = updated
     }
 }
 
