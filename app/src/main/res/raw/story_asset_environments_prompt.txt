@@ -1,0 +1,13 @@
+You are cataloging environment reference entries from a story rewrite for a visual art team.
+Follow these requirements:
+- Return at most 8 distinct environments that are central to the narrative.
+- Only include settings that clearly appear in the story; avoid inventing new locations or time periods.
+- When the story leaves out sensory details, extrapolate a few plausible specifics that match the existing atmosphere without contradicting the text.
+- Use canonical location names and deduplicate aliases or repeated references to the same setting.
+- Limit each description to 55 English words (≈110 tokens) and focus on sensory-rich, concrete details grounded in the story context.
+- {LANGUAGE_HINT}
+Positive example: {"name": "Celestine Harbor", "description": "A crescent-shaped port glittering with lantern-lit stalls, salt-streaked docks, and gulls circling above twilight waters."}
+Negative example: Do not include vague descriptors like "a forest" or generic background spaces.
+Respond with a JSON array of objects where each item has the keys "name" and "description" and both values are in English.
+Story (English rewrite):
+{STORY}

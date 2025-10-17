@@ -190,37 +190,26 @@ class SceneBuilder(
             }
         }.ifBlank { "- None" }
 
-        val prompt = buildString {
-            appendLine("Given the following story, split it into coherent scenes.")
-            appendLine("Produce between 4 and 6 scenes when the narrative allows; otherwise return the maximum number of meaningful scenes without padding or empty entries.")
-            appendLine("For each scene reply with: caption_original (the narrative in the original language), caption_english (the same narrative in English), environment (choose an English name from the list, or \"Unspecified\" when nothing applies), and characters (an array of English character names from the list, or an empty array when no listed characters appear).")
-            appendLine("Use only the English names exactly as provided when listing environments or characters, and never invent new ones.")
-            appendLine("Do not include blank or placeholder scenes.")
-            appendLine("If only one language is available, duplicate or translate the text so that both caption fields are populated as described below.")
-            appendLine("Example scene array item:")
-            appendLine("{ \"caption_original\": \"原文...\", \"caption_english\": \"English...\", \"environment\": \"Forest Clearing\", \"characters\": [\"Hero\", \"Guide\"] }")
-            if (original == null && english != null) {
-                appendLine("Only the English translation is available; repeat it for caption_original as well.")
-            } else if (original != null && providedEnglish == null) {
-                appendLine("Only the original narrative is available; translate it into English for caption_english.")
-            }
-            original?.let {
-                appendLine()
-                appendLine("Original story:")
-                appendLine(it)
-            }
-            english?.let {
-                appendLine()
-                appendLine("English translation:")
-                appendLine(it)
-            }
-            appendLine()
-            appendLine("Characters (English reference):")
-            appendLine(charList)
-            appendLine()
-            appendLine("Environments (English reference):")
-            appendLine(envList)
+        val languageNote = when {
+            original == null && english != null ->
+                "Only the English translation is available; repeat it for caption_original as well.\n\n"
+            original != null && providedEnglish == null ->
+                "Only the original narrative is available; translate it into English for caption_english.\n\n"
+            else -> ""
         }
+        val originalSection = original?.let { "Original story:\n$it\n\n" } ?: ""
+        val englishSection = english?.let { "English translation:\n$it\n\n" } ?: ""
+        val prompt = PromptTemplates.load(
+            appContext,
+            R.raw.scene_builder_prompt,
+            mapOf(
+                "LANGUAGE_NOTE" to languageNote,
+                "ORIGINAL_SECTION" to originalSection,
+                "ENGLISH_SECTION" to englishSection,
+                "CHARACTER_LIST" to charList,
+                "ENVIRONMENT_LIST" to envList,
+            ),
+        ).trim()
         val arr = callLLM(prompt) ?: return emptyList()
         val scenes = mutableListOf<Scene>()
         for (i in 0 until arr.length()) {

@@ -1,0 +1,14 @@
+Given the following story, split it into coherent scenes.
+Produce between 4 and 6 scenes when the narrative allows; otherwise return the maximum number of meaningful scenes without padding or empty entries.
+For each scene reply with: caption_original (the narrative in the original language), caption_english (the same narrative in English), environment (choose an English name from the list, or "Unspecified" when nothing applies), and characters (an array of English character names from the list, or an empty array when no listed characters appear).
+Use only the English names exactly as provided when listing environments or characters, and never invent new ones.
+Do not include blank or placeholder scenes.
+If only one language is available, duplicate or translate the text so that both caption fields are populated as described below.
+Example scene array item:
+{ "caption_original": "原文...", "caption_english": "English...", "environment": "Forest Clearing", "characters": ["Hero", "Guide"] }
+
+{LANGUAGE_NOTE}{ORIGINAL_SECTION}{ENGLISH_SECTION}Characters (English reference):
+{CHARACTER_LIST}
+
+Environments (English reference):
+{ENVIRONMENT_LIST}
