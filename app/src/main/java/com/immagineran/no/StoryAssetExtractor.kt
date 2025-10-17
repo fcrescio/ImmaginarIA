@@ -163,9 +163,11 @@ class StoryAssetExtractor(
         val prompt = """
             You are an expert taxonomy builder helping our art team extract characters from a story rewrite.
             Follow these requirements:
-            - Return at most 12 characters prioritized by narrative importance.
+            - Return at most 8 characters prioritized by narrative importance.
+            - Only list characters who clearly appear in the story or are strongly implied; do not invent new cast members.
+            - When the story omits concrete physical or emotional details, infer a few plausible traits that stay faithful to the established tone instead of adding new subplots.
             - Use canonical names and deduplicate aliases that refer to the same person.
-            - Limit each description to 60 English words (≈120 tokens) and prefer 2–3 vivid sentences.
+            - Limit each description to 60 English words (≈120 tokens) and prefer 2–3 vivid sentences grounded in the story context.
             - $languageHint
             Positive example: {"name": "Ava Martinez", "description": "A young robotics prodigy with grease-streaked coveralls and a restless curiosity lighting her dark eyes."}
             Negative example: Do not include generic descriptors like "the city" or unnamed groups.
@@ -193,9 +195,11 @@ class StoryAssetExtractor(
         val prompt = """
             You are cataloging environment reference entries from a story rewrite for a visual art team.
             Follow these requirements:
-            - Return at most 10 distinct environments that are central to the narrative.
+            - Return at most 8 distinct environments that are central to the narrative.
+            - Only include settings that clearly appear in the story; avoid inventing new locations or time periods.
+            - When the story leaves out sensory details, extrapolate a few plausible specifics that match the existing atmosphere without contradicting the text.
             - Use canonical location names and deduplicate aliases or repeated references to the same setting.
-            - Limit each description to 55 English words (≈110 tokens) and focus on sensory-rich, concrete details.
+            - Limit each description to 55 English words (≈110 tokens) and focus on sensory-rich, concrete details grounded in the story context.
             - $languageHint
             Positive example: {"name": "Celestine Harbor", "description": "A crescent-shaped port glittering with lantern-lit stalls, salt-streaked docks, and gulls circling above twilight waters."}
             Negative example: Do not include vague descriptors like "a forest" or generic background spaces.
