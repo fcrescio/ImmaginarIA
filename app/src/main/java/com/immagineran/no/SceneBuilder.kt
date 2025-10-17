@@ -18,6 +18,7 @@ class SceneBuilder(
     private val crashlytics: FirebaseCrashlytics = FirebaseCrashlytics.getInstance(),
 ) {
     private suspend fun callLLM(prompt: String): JSONArray? = withContext(Dispatchers.IO) {
+        val structuredOutputs = SettingsManager.useStructuredOutputs(appContext)
         val key = BuildConfig.OPENROUTER_API_KEY
         if (key.isBlank()) {
             Log.e("SceneBuilder", "Missing OpenRouter API key")
@@ -38,7 +39,7 @@ class SceneBuilder(
                         )
                     },
                 )
-                if (SettingsManager.useStructuredOutputs(appContext)) {
+                if (structuredOutputs) {
                     val schema = JSONObject(
                         """
                         {
@@ -98,11 +99,39 @@ class SceneBuilder(
                 val parsed = message.opt("parsed")
                 when (parsed) {
                     is JSONArray -> parsed
-                    is JSONObject -> JSONArray().put(parsed)
+                    is JSONObject -> {
+                        if (structuredOutputs) {
+                            Log.w("SceneBuilder", "Schema returned object instead of array; coercing")
+                            crashlytics.log("SceneBuilder schema fallback: object coerced to array")
+                        }
+                        JSONArray().put(parsed)
+                    }
                     else -> {
+                        if (structuredOutputs) {
+                            val type = parsed?.javaClass?.simpleName ?: "null"
+                            Log.w(
+                                "SceneBuilder",
+                                "Schema missing parsed array (type=$type); attempting to parse content",
+                            )
+                            crashlytics.log("SceneBuilder schema fallback: parsed=$type")
+                        }
                         val content = message.optString("content")
-                        if (content.isBlank()) return@withContext null
-                        JSONArray(content)
+                        if (content.isBlank()) {
+                            if (structuredOutputs) {
+                                crashlytics.log("SceneBuilder schema failure: blank content")
+                            }
+                            return@withContext null
+                        }
+                        runCatching { JSONArray(content) }
+                            .onFailure { e ->
+                                if (structuredOutputs) {
+                                    crashlytics.log("SceneBuilder schema failure: content parse error")
+                                    crashlytics.recordException(e)
+                                }
+                                Log.e("SceneBuilder", "Failed to parse schema fallback", e)
+                            }
+                            .getOrNull()
+                            ?: return@withContext null
                     }
                 }
             }
@@ -163,8 +192,13 @@ class SceneBuilder(
 
         val prompt = buildString {
             appendLine("Given the following story, split it into coherent scenes.")
-            appendLine("For each scene reply with: caption_original (the narrative in the original language), caption_english (the same narrative in English), environment (choose an English name from the list), and characters (an array of English character names from the list).")
-            appendLine("Use only the English names exactly as provided when listing environments or characters.")
+            appendLine("Produce between 4 and 6 scenes when the narrative allows; otherwise return the maximum number of meaningful scenes without padding or empty entries.")
+            appendLine("For each scene reply with: caption_original (the narrative in the original language), caption_english (the same narrative in English), environment (choose an English name from the list, or \"Unspecified\" when nothing applies), and characters (an array of English character names from the list, or an empty array when no listed characters appear).")
+            appendLine("Use only the English names exactly as provided when listing environments or characters, and never invent new ones.")
+            appendLine("Do not include blank or placeholder scenes.")
+            appendLine("If only one language is available, duplicate or translate the text so that both caption fields are populated as described below.")
+            appendLine("Example scene array item:")
+            appendLine("{ \"caption_original\": \"原文...\", \"caption_english\": \"English...\", \"environment\": \"Forest Clearing\", \"characters\": [\"Hero\", \"Guide\"] }")
             if (original == null && english != null) {
                 appendLine("Only the English translation is available; repeat it for caption_original as well.")
             } else if (original != null && providedEnglish == null) {
