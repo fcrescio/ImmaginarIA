@@ -129,7 +129,7 @@ class ImageGenerator(
     }
 
     private fun pollFalResponse(responseUrl: String, key: String, file: File): String? {
-        repeat(10) {
+        repeat(10) { attempt ->
             val request = Request.Builder()
                 .url(responseUrl)
                 .header("Authorization", "Key $key")
@@ -137,6 +137,11 @@ class ImageGenerator(
                 .build()
             client.newCall(request).execute().use { resp ->
                 val body = resp.body?.string()
+                val pollRequestJson = JSONObject().apply {
+                    put("response_url", responseUrl)
+                    put("attempt", attempt + 1)
+                }
+                LlmLogger.log(appContext, "ImageGeneratorFalPoll", pollRequestJson.toString(), body)
                 if (!resp.isSuccessful) {
                     Log.e("ImageGenerator", "fal.ai poll HTTP ${'$'}{resp.code}")
                     crashlytics.log("fal.ai poll failed: ${'$'}{resp.code}")
@@ -166,9 +171,18 @@ class ImageGenerator(
             if (!resp.isSuccessful) {
                 Log.e("ImageGenerator", "Failed to download image: HTTP ${'$'}{resp.code}")
                 crashlytics.log("Image download failed: ${'$'}{resp.code}")
+                val errorRequestJson = JSONObject().apply {
+                    put("url", url)
+                    put("status_code", resp.code)
+                }
+                LlmLogger.log(appContext, "ImageGeneratorFalDownload", errorRequestJson.toString(), resp.body?.string())
                 return null
             }
-            val body = resp.body ?: return null
+            val body = resp.body ?: run {
+                val errorRequestJson = JSONObject().apply { put("url", url) }
+                LlmLogger.log(appContext, "ImageGeneratorFalDownload", errorRequestJson.toString(), "<empty body>")
+                return null
+            }
             body.byteStream().use { input ->
                 file.outputStream().use { output ->
                     input.copyTo(output)
