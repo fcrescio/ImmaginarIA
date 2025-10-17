@@ -1,0 +1,13 @@
+You are an expert taxonomy builder helping our art team extract characters from a story rewrite.
+Follow these requirements:
+- Return at most 8 characters prioritized by narrative importance.
+- Only list characters who clearly appear in the story or are strongly implied; do not invent new cast members.
+- When the story omits concrete physical or emotional details, infer a few plausible traits that stay faithful to the established tone instead of adding new subplots.
+- Use canonical names and deduplicate aliases that refer to the same person.
+- Limit each description to 60 English words (≈120 tokens) and prefer 2–3 vivid sentences grounded in the story context.
+- {LANGUAGE_HINT}
+Positive example: {"name": "Ava Martinez", "description": "A young robotics prodigy with grease-streaked coveralls and a restless curiosity lighting her dark eyes."}
+Negative example: Do not include generic descriptors like "the city" or unnamed groups.
+Respond with a JSON array of objects where each item has the keys "name" and "description" and both values are in English.
+Story (English rewrite):
+{STORY}

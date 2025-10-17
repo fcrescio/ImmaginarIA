@@ -29,33 +29,15 @@ class StoryStitcher(
         }
 
         runCatching {
-            val content = buildString {
-                appendLine(
-                    "You are a multilingual storyteller. Analyze the provided prompt and " +
-                        "transcript segments to detect the primary language used."
-                )
-                appendLine(
-                    "Write a cohesive narrative in that same language, keeping the voice and " +
-                        "details consistent."
-                )
-                appendLine(
-                    "Also produce an English translation of the narrative."
-                )
-                appendLine(
-                    "Respond strictly with JSON containing the keys 'language', 'story_original', " +
-                        "and 'story_english'."
-                )
-                appendLine("Language should be identified using either the common name or ISO 639-1 code.")
-                appendLine()
-                appendLine("Prompt:")
-                appendLine(prompt)
-                appendLine()
-                appendLine("Segments:")
-                segments.forEach { segment ->
-                    append("- ")
-                    appendLine(segment)
-                }
-            }
+            val segmentsText = segments.joinToString(separator = "\n") { "- $it" }
+            val content = PromptTemplates.load(
+                appContext,
+                R.raw.story_stitcher_prompt,
+                mapOf(
+                    "PROMPT" to prompt,
+                    "SEGMENTS" to segmentsText,
+                ),
+            ).trim()
 
             val root = JSONObject().apply {
                 put("model", "mistralai/mistral-nemo")
