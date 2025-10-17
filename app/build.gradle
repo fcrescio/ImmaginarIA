@@ -39,6 +39,7 @@ android {
         versionName readConf('VERSION_NAME', "0.1")
         buildConfigField "String", "GROQ_API_KEY", "\"${readConf('GROQ_API_KEY', '')}\""
         buildConfigField "String", "OPENROUTER_API_KEY", "\"${readConf('OPENROUTER_API_KEY', '')}\""
+        buildConfigField "String", "FAL_API_KEY", "\"${readConf('FAL_KEY', '')}\""
     }
     buildFeatures {
         compose true

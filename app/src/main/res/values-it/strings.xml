@@ -36,6 +36,9 @@
     <string name="style_photorealistic">Fotorealistico</string>
     <string name="style_cartoon">Cartoon</string>
     <string name="style_manga">Manga</string>
+    <string name="image_generator">Generatore di immagini</string>
+    <string name="image_provider_openrouter">OpenRouter – Nano Banana</string>
+    <string name="image_provider_fal">fal.ai Flux Schnell</string>
     <string name="image_generation_error">Generazione dell\'immagine fallita</string>
     <string name="story_tab">Storia</string>
     <string name="share_llm_logs">Condividi log LLM</string>
