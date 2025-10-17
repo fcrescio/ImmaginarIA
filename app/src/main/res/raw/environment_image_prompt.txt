@@ -1,1 +1,5 @@
-Generate a {STYLE} environment concept art from the following description: {DESCRIPTION}
+Generate a {STYLE} environment concept art piece from the following description: {DESCRIPTION}
+Frame the scene with a sweeping wide-angle vista that establishes spatial depth and key landmarks.
+Light the environment to match the implied time of day, emphasizing atmospheric perspective and volumetric effects.
+Depict rich surface detail, layered materials, and storytelling props suitable for a production matte painting.
+Output the artwork in a 16:9 cinematic landscape aspect ratio.

@@ -1,1 +1,5 @@
 Generate a {STYLE} character sheet from the following description: {DESCRIPTION}
+Use a 3/4 view portrait framing that captures the full figure and silhouette.
+Illuminate the subject with balanced studio lighting that reveals costume materials and facial features without harsh shadows.
+Render with meticulous line work, layered textures, and production-ready detailing.
+Output the illustration in a 3:4 portrait aspect ratio focused on the character.
