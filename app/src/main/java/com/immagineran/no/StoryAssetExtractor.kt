@@ -17,6 +17,51 @@ class StoryAssetExtractor(
     private val client: OkHttpClient = OkHttpClient(),
     private val crashlytics: FirebaseCrashlytics = FirebaseCrashlytics.getInstance(),
 ) {
+    private fun <T> parseAssets(
+        arr: JSONArray,
+        assetType: String,
+        builder: (name: String, description: String) -> T,
+    ): List<T> {
+        val results = mutableListOf<T>()
+        val validationErrors = mutableListOf<String>()
+        for (i in 0 until arr.length()) {
+            val item = arr.opt(i)
+            val obj = item as? JSONObject
+            if (obj == null) {
+                validationErrors.add(
+                    "$assetType[$i]: expected object but was ${item?.let { it::class.simpleName } ?: "null"}"
+                )
+                continue
+            }
+            val missingKeys = mutableListOf<String>()
+            if (!obj.has("name")) missingKeys.add("name")
+            if (!obj.has("description")) missingKeys.add("description")
+            if (missingKeys.isNotEmpty()) {
+                validationErrors.add(
+                    "$assetType[$i]: missing keys ${missingKeys.joinToString(", ")}"
+                )
+                continue
+            }
+            val name = obj.optString("name").trim()
+            val description = obj.optString("description").trim()
+            if (name.isEmpty()) {
+                validationErrors.add("$assetType[$i]: empty \"name\" value")
+                continue
+            }
+            if (description.isEmpty()) {
+                validationErrors.add("$assetType[$i]: empty \"description\" value")
+                continue
+            }
+            results.add(builder(name, description))
+        }
+        if (validationErrors.isNotEmpty()) {
+            val message = "$assetType validation issues -> ${validationErrors.joinToString("; ")}"
+            Log.w("StoryAssetExtractor", message)
+            crashlytics.log(message)
+        }
+        return results
+    }
+
     private suspend fun callLLM(prompt: String): JSONArray? = withContext(Dispatchers.IO) {
         val key = BuildConfig.OPENROUTER_API_KEY
         if (key.isBlank()) {
@@ -116,31 +161,27 @@ class StoryAssetExtractor(
             }
             ?: "Ensure every name and description you output is written in clear, natural English."
         val prompt = """
-            Extract the distinct characters from the following story rewrite.
-            Provide concise, visually descriptive summaries for each character.
-            $languageHint
+            You are an expert taxonomy builder helping our art team extract characters from a story rewrite.
+            Follow these requirements:
+            - Return at most 12 characters prioritized by narrative importance.
+            - Use canonical names and deduplicate aliases that refer to the same person.
+            - Limit each description to 60 English words (≈120 tokens) and prefer 2–3 vivid sentences.
+            - $languageHint
+            Positive example: {"name": "Ava Martinez", "description": "A young robotics prodigy with grease-streaked coveralls and a restless curiosity lighting her dark eyes."}
+            Negative example: Do not include generic descriptors like "the city" or unnamed groups.
             Respond with a JSON array of objects where each item has the keys "name" and "description" and both values are in English.
             Story (English rewrite):
             $story
         """.trimIndent()
         val arr = callLLM(prompt) ?: return emptyList()
-        val result = mutableListOf<CharacterAsset>()
-        for (i in 0 until arr.length()) {
-            val obj = arr.optJSONObject(i) ?: continue
-            val name = obj.optString("name").trim()
-            val desc = obj.optString("description").trim()
-            if (name.isNotEmpty() && desc.isNotEmpty()) {
-                result.add(
-                    CharacterAsset(
-                        name = name,
-                        description = desc,
-                        nameEnglish = name,
-                        descriptionEnglish = desc,
-                    )
-                )
-            }
+        return parseAssets(arr, "characters") { name, description ->
+            CharacterAsset(
+                name = name,
+                description = description,
+                nameEnglish = name,
+                descriptionEnglish = description,
+            )
         }
-        return result
     }
 
     suspend fun extractEnvironments(story: String, sourceLanguage: String? = null): List<EnvironmentAsset> {
@@ -150,30 +191,26 @@ class StoryAssetExtractor(
             }
             ?: "Ensure every environment name and description you output is written in clear, natural English."
         val prompt = """
-            Extract the key environments and settings from the following story rewrite.
-            Provide concise, visually descriptive summaries for each environment.
-            $languageHint
+            You are cataloging environment reference entries from a story rewrite for a visual art team.
+            Follow these requirements:
+            - Return at most 10 distinct environments that are central to the narrative.
+            - Use canonical location names and deduplicate aliases or repeated references to the same setting.
+            - Limit each description to 55 English words (≈110 tokens) and focus on sensory-rich, concrete details.
+            - $languageHint
+            Positive example: {"name": "Celestine Harbor", "description": "A crescent-shaped port glittering with lantern-lit stalls, salt-streaked docks, and gulls circling above twilight waters."}
+            Negative example: Do not include vague descriptors like "a forest" or generic background spaces.
             Respond with a JSON array of objects where each item has the keys "name" and "description" and both values are in English.
             Story (English rewrite):
             $story
         """.trimIndent()
         val arr = callLLM(prompt) ?: return emptyList()
-        val result = mutableListOf<EnvironmentAsset>()
-        for (i in 0 until arr.length()) {
-            val obj = arr.optJSONObject(i) ?: continue
-            val name = obj.optString("name").trim()
-            val desc = obj.optString("description").trim()
-            if (name.isNotEmpty() && desc.isNotEmpty()) {
-                result.add(
-                    EnvironmentAsset(
-                        name = name,
-                        description = desc,
-                        nameEnglish = name,
-                        descriptionEnglish = desc,
-                    )
-                )
-            }
+        return parseAssets(arr, "environments") { name, description ->
+            EnvironmentAsset(
+                name = name,
+                description = description,
+                nameEnglish = name,
+                descriptionEnglish = description,
+            )
         }
-        return result
     }
 }
