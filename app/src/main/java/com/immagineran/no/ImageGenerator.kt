@@ -66,7 +66,11 @@ class ImageGenerator(
                         return@withContext file.absolutePath
                     }
                 }
-                messages.put(message("you did not generate any image, retry"))
+                messages.put(
+                    message(
+                        "Please try a different composition emphasizing fresh framing, varied focal points, and an alternative mood while staying true to the prompt."
+                    )
+                )
             }
             null
         }.getOrElse { e ->

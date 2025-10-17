@@ -1,1 +1,5 @@
 Generate a {STYLE} scene from the following description: {DESCRIPTION}
+Compose the moment with a dynamic cinematic camera angle that highlights character interactions and focal action.
+Use dramatic storytelling lighting—key lights, rim accents, and motivated practical sources—to amplify mood.
+Deliver a highly detailed narrative snapshot with expressive poses, effects, and environmental storytelling cues.
+Output the scene in a 21:9 anamorphic aspect ratio suited for film stills.
