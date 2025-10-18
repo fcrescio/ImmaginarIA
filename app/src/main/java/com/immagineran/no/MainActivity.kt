@@ -27,6 +27,8 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +36,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -58,10 +66,84 @@ class MainActivity : ComponentActivity() {
                     var storyToView by remember { mutableStateOf<Story?>(null) }
                     var processingProgress by remember { mutableStateOf(0f) }
                     val processingLogs = remember { mutableStateListOf<String>() }
+                    var processingWorkId by rememberSaveable { mutableStateOf<String?>(null) }
+                    var lastObservedWorkId by remember { mutableStateOf<String?>(null) }
+                    var lastLogId by remember { mutableStateOf<Long?>(null) }
+                    val workManager = remember { WorkManager.getInstance(this@MainActivity.applicationContext) }
+                    val workInfos by workManager
+                        .getWorkInfosByTagLiveData(StoryProcessingWorker.WORK_TAG)
+                        .observeAsState(emptyList())
+                    val trackedWorkInfo = remember(processingWorkId, workInfos) {
+                        processingWorkId?.let { id ->
+                            workInfos.firstOrNull { it.id.toString() == id }
+                        } ?: workInfos.firstOrNull { !it.state.isFinished }
+                    }
                     val scope = rememberCoroutineScope()
                     LaunchedEffect(Unit) {
                         delay(2000)
                         showSplash = false
+                    }
+                    LaunchedEffect(workInfos) {
+                        if (processingWorkId == null) {
+                            workInfos.firstOrNull { !it.state.isFinished }?.let { info ->
+                                processingWorkId = info.id.toString()
+                                showProcessing = true
+                            }
+                        }
+                    }
+                    LaunchedEffect(trackedWorkInfo?.id) {
+                        val newId = trackedWorkInfo?.id?.toString()
+                        if (newId != null && newId != lastObservedWorkId) {
+                            processingLogs.clear()
+                            processingProgress = 0f
+                            lastLogId = null
+                            lastObservedWorkId = newId
+                        } else if (newId == null) {
+                            lastObservedWorkId = null
+                        }
+                    }
+                    LaunchedEffect(trackedWorkInfo?.progress) {
+                        trackedWorkInfo?.progress?.let { data ->
+                            val current = data.getInt(StoryProcessingWorker.KEY_STEP_CURRENT, 0)
+                            val total = data.getInt(StoryProcessingWorker.KEY_STEP_TOTAL, 0)
+                            if (total > 0) {
+                                processingProgress = current / total.toFloat()
+                            }
+                            val logId = data.getLong(StoryProcessingWorker.KEY_LOG_ID, 0L)
+                            if (logId != 0L && logId != lastLogId) {
+                                data.getString(StoryProcessingWorker.KEY_LOG_MESSAGE)?.let { log ->
+                                    processingLogs.add(log)
+                                    lastLogId = logId
+                                }
+                            }
+                        }
+                    }
+                    LaunchedEffect(trackedWorkInfo?.state) {
+                        when (trackedWorkInfo?.state) {
+                            WorkInfo.State.SUCCEEDED -> {
+                                processingProgress = 1f
+                                showProcessing = false
+                                processingWorkId = null
+                                storyToResume = null
+                            }
+                            WorkInfo.State.FAILED -> {
+                                showProcessing = false
+                                processingWorkId = null
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    R.string.processing_failed,
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                            }
+                            WorkInfo.State.CANCELLED -> {
+                                showProcessing = false
+                                processingWorkId = null
+                            }
+                            WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
+                                showProcessing = true
+                            }
+                            else -> Unit
+                        }
                     }
                     if (showSplash) {
                         SplashScreen()
@@ -84,108 +166,79 @@ class MainActivity : ComponentActivity() {
                                             val allTranscribed = transcriptions.all { it != null }
                                             val storyId = storyToResume?.id ?: System.currentTimeMillis()
                                             val timestamp = storyToResume?.timestamp ?: System.currentTimeMillis()
-                                            val procContext = if (allTranscribed) {
-                                                val prompt = getString(R.string.story_prompt)
-                                                ProcessingContext(prompt, transcriptions.filterNotNull(), storyId)
-                                            } else null
-                                            if (procContext != null) {
-                                                showProcessing = true
+                                            if (allTranscribed) {
+                                                val payload = StoryProcessingPayload(
+                                                    storyId = storyId,
+                                                    prompt = getString(R.string.story_prompt),
+                                                    transcriptions = transcriptions.filterNotNull(),
+                                                    userTitle = title,
+                                                    timestamp = timestamp,
+                                                    segmentPaths = segments.filterNotNull().map { it.absolutePath },
+                                                )
+                                                val payloadFile = withContext(Dispatchers.IO) {
+                                                    context.writeStoryProcessingPayload(payload)
+                                                }
+                                                val request = OneTimeWorkRequestBuilder<StoryProcessingWorker>()
+                                                    .setInputData(
+                                                        workDataOf(
+                                                            StoryProcessingWorker.KEY_PAYLOAD_PATH to payloadFile.absolutePath,
+                                                        )
+                                                    )
+                                                    .setConstraints(
+                                                        Constraints.Builder()
+                                                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                                                            .build()
+                                                    )
+                                                    .addTag(StoryProcessingWorker.WORK_TAG)
+                                                    .build()
+                                                processingWorkId = request.id.toString()
                                                 processingLogs.clear()
                                                 processingProgress = 0f
-                                                withContext(Dispatchers.IO) {
-                                                    val steps = mutableListOf<ProcessingStep>(
-                                                        StoryStitchingStep(this@MainActivity),
-                                                        CharacterExtractionStep(this@MainActivity),
-                                                    )
-                                                    if (
-                                                        SettingsManager.isCharacterImageGenerationEnabled(
-                                                            this@MainActivity
-                                                        )
-                                                    ) {
-                                                        steps.add(CharacterImageGenerationStep(this@MainActivity))
-                                                    }
-                                                    steps.add(EnvironmentExtractionStep(this@MainActivity))
-                                                    if (
-                                                        SettingsManager.isEnvironmentImageGenerationEnabled(
-                                                            this@MainActivity
-                                                        )
-                                                    ) {
-                                                        steps.add(EnvironmentImageGenerationStep(this@MainActivity))
-                                                    }
-                                                    steps.add(SceneCompositionStep(this@MainActivity))
-                                                    steps.add(SceneImageGenerationStep(this@MainActivity))
-                                                    ProcessingPipeline(steps).run(
-                                                        procContext,
-                                                        onProgress = { current, total, message ->
-                                                            withContext(Dispatchers.Main) {
-                                                                processingProgress = current / total.toFloat()
-                                                                val stepName = message
-                                                                    .removeSuffix("Step")
-                                                                    .replace(Regex("([a-z])([A-Z])"), "$1 $2")
-                                                                    .uppercase()
-                                                                processingLogs.add("[$current/$total] >>> $stepName")
-                                                            }
-                                                        },
-                                                        onLog = { logMessage ->
-                                                            withContext(Dispatchers.Main) {
-                                                                processingLogs.add(logMessage)
-                                                            }
-                                                        }
-                                                    )
-                                                }
-                                                processingLogs.add(getString(R.string.processing_complete))
-                                                showProcessing = false
-                                            }
-                                            val content = procContext?.storyJson
-                                                ?: procContext?.story
-                                                ?: ""
-                                            val processed = !procContext?.story.isNullOrBlank()
-                                            val segmentPaths = if (processed) {
-                                                segments.filterNotNull().forEach { it.delete() }
-                                                emptyList()
-                                            } else {
-                                                segments.filterNotNull().map { it.absolutePath }
-                                            }
-                                            val resolvedTitle = resolveFinalTitle(
-                                                userTitle = title,
-                                                extractedTitleEnglish = procContext?.storyTitleEnglish,
-                                                extractedTitleLocalized = procContext?.storyTitle,
-                                                timestamp = timestamp,
-                                            )
-                                            if (storyToResume != null) {
-                                                val updated = storyToResume!!.copy(
-                                                    title = resolvedTitle,
-                                                    segments = segmentPaths,
-                                                    content = content,
-                                                    language = procContext?.storyLanguage
-                                                        ?: storyToResume!!.language,
-                                                    storyOriginal = procContext?.storyOriginal
-                                                        ?: storyToResume!!.storyOriginal,
-                                                    storyEnglish = procContext?.storyEnglish
-                                                        ?: storyToResume!!.storyEnglish,
-                                                    processed = processed,
-                                                    characters = procContext?.characters ?: emptyList(),
-                                                    environments = procContext?.environments ?: emptyList(),
-                                                    scenes = procContext?.scenes ?: emptyList(),
-                                                )
-                                                StoryRepository.updateStory(context, updated)
+                                                lastLogId = null
+                                                showProcessing = true
+                                                StoryProcessingWorker.enqueue(context, request)
                                                 storyToResume = null
                                             } else {
-                                                val story = Story(
+                                                val segmentPaths = segments.filterNotNull().map { it.absolutePath }
+                                                if (storyToResume != null) {
+                                                    withContext(Dispatchers.IO) {
+                                                        storyToResume!!.segments
+                                                            .filter { it !in segmentPaths }
+                                                            .forEach { path ->
+                                                                runCatching { File(path).delete() }
+                                                            }
+                                                    }
+                                                }
+                                                val resolvedTitle = resolveFinalTitle(
+                                                    context = context,
+                                                    userTitle = title,
+                                                    extractedTitleEnglish = null,
+                                                    extractedTitleLocalized = null,
+                                                    timestamp = timestamp,
+                                                )
+                                                val pendingStory = storyToResume?.copy(
+                                                    title = resolvedTitle,
+                                                    timestamp = timestamp,
+                                                    segments = segmentPaths,
+                                                    content = storyToResume?.content ?: "",
+                                                    processed = false,
+                                                    characters = emptyList(),
+                                                    environments = emptyList(),
+                                                    scenes = emptyList(),
+                                                ) ?: Story(
                                                     id = storyId,
                                                     title = resolvedTitle,
                                                     timestamp = timestamp,
-                                                    content = content,
-                                                    language = procContext?.storyLanguage,
-                                                    storyOriginal = procContext?.storyOriginal,
-                                                    storyEnglish = procContext?.storyEnglish,
+                                                    content = "",
                                                     segments = segmentPaths,
-                                                    processed = processed,
-                                                    characters = procContext?.characters ?: emptyList(),
-                                                    environments = procContext?.environments ?: emptyList(),
-                                                    scenes = procContext?.scenes ?: emptyList(),
+                                                    processed = false,
                                                 )
-                                                StoryRepository.addStory(context, story)
+                                                if (storyToResume != null) {
+                                                    StoryRepository.updateStory(context, pendingStory)
+                                                    storyToResume = null
+                                                } else {
+                                                    StoryRepository.addStory(context, pendingStory)
+                                                }
                                             }
                                         }
                                     }
@@ -221,49 +274,6 @@ class MainActivity : ComponentActivity() {
                     }
             }
         }
-    }
-}
-
-    private fun resolveFinalTitle(
-        userTitle: String,
-        extractedTitleEnglish: String?,
-        extractedTitleLocalized: String?,
-        timestamp: Long,
-    ): String {
-        val dateLabel = DateFormat.getDateTimeInstance().format(Date(timestamp))
-        val defaultTitle = getString(R.string.default_story_title, dateLabel)
-        val sanitizedExtracted = sanitizeExtractedTitle(extractedTitleEnglish)
-        val localizedCandidate = extractedTitleLocalized?.takeIf { it.isNotBlank() }
-        return when {
-            sanitizedExtracted != null -> {
-                val displayTitle = localizedCandidate ?: sanitizedExtracted
-                getString(
-                    R.string.story_title_with_date,
-                    displayTitle,
-                    dateLabel,
-                )
-            }
-            localizedCandidate != null -> localizedCandidate
-            userTitle.isNotBlank() -> userTitle
-            else -> defaultTitle
-        }
-    }
-
-    private fun sanitizeExtractedTitle(raw: String?): String? {
-        val normalized = raw
-            ?.replace('\n', ' ')
-            ?.replace(Regex("\\s+"), " ")
-            ?.trim()
-            ?: return null
-        if (normalized.isEmpty()) return null
-        val withoutQuotes = normalized.trim('"', '\'', '“', '”')
-        if (withoutQuotes.isEmpty()) return null
-        val cleaned = withoutQuotes.trimEnd('.', '!', '?', ':', ';', ',')
-        if (cleaned.isEmpty()) return null
-        if (cleaned.length > 48) return null
-        val wordCount = cleaned.split(Regex("\\s+")).count { it.isNotBlank() }
-        if (wordCount > 8) return null
-        return cleaned
     }
 }
 
