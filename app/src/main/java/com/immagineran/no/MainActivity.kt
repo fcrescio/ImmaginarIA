@@ -147,9 +147,10 @@ class MainActivity : ComponentActivity() {
                                                 segments.filterNotNull().map { it.absolutePath }
                                             }
                                             val resolvedTitle = resolveFinalTitle(
-                                                title,
-                                                procContext?.storyTitle,
-                                                timestamp,
+                                                userTitle = title,
+                                                extractedTitleEnglish = procContext?.storyTitleEnglish,
+                                                extractedTitleLocalized = procContext?.storyTitle,
+                                                timestamp = timestamp,
                                             )
                                             if (storyToResume != null) {
                                                 val updated = storyToResume!!.copy(
@@ -225,18 +226,24 @@ class MainActivity : ComponentActivity() {
 
     private fun resolveFinalTitle(
         userTitle: String,
-        extractedTitle: String?,
+        extractedTitleEnglish: String?,
+        extractedTitleLocalized: String?,
         timestamp: Long,
     ): String {
         val dateLabel = DateFormat.getDateTimeInstance().format(Date(timestamp))
         val defaultTitle = getString(R.string.default_story_title, dateLabel)
-        val sanitizedExtracted = sanitizeExtractedTitle(extractedTitle)
+        val sanitizedExtracted = sanitizeExtractedTitle(extractedTitleEnglish)
+        val localizedCandidate = extractedTitleLocalized?.takeIf { it.isNotBlank() }
         return when {
-            sanitizedExtracted != null -> getString(
-                R.string.story_title_with_date,
-                sanitizedExtracted,
-                dateLabel,
-            )
+            sanitizedExtracted != null -> {
+                val displayTitle = localizedCandidate ?: sanitizedExtracted
+                getString(
+                    R.string.story_title_with_date,
+                    displayTitle,
+                    dateLabel,
+                )
+            }
+            localizedCandidate != null -> localizedCandidate
             userTitle.isNotBlank() -> userTitle
             else -> defaultTitle
         }

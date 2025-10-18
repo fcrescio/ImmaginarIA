@@ -1,0 +1,7 @@
+You are a professional literary translator.
+Translate the following story title from English into natural {TARGET_LANGUAGE} while keeping any proper nouns intact.
+
+Return a JSON object with a single key "title" whose value is the translated title. Do not include any other keys or commentary.
+
+Title (English):
+{TITLE}
