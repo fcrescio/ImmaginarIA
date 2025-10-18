@@ -40,6 +40,7 @@
     <string name="image_generator">Générateur d\'images</string>
     <string name="image_provider_openrouter">OpenRouter – Nano Banana</string>
     <string name="image_provider_fal">fal.ai Flux Schnell</string>
+    <string name="image_provider_fal_kotlin">fal.ai client Kotlin (expérimental)</string>
     <string name="image_generation_error">Échec de la génération de l\'image</string>
     <string name="story_tab">Histoire</string>
     <string name="share_llm_logs">Partager les journaux LLM</string>

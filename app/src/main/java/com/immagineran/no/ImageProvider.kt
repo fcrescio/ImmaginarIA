@@ -8,4 +8,5 @@ import androidx.annotation.StringRes
 enum class ImageProvider(@StringRes val labelRes: Int) {
     OPENROUTER(R.string.image_provider_openrouter),
     FAL(R.string.image_provider_fal),
+    FAL_KOTLIN(R.string.image_provider_fal_kotlin),
 }
