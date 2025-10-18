@@ -56,9 +56,13 @@
     <string name="save_title">Save title</string>
     <string name="processing">Processing</string>
     <string name="processing_complete">Processing complete</string>
+    <string name="processing_failed">Processing failed</string>
     <string name="processing_character_image_progress">Generating character image %1$d of %2$d…</string>
     <string name="processing_environment_image_progress">Generating environment image %1$d of %2$d…</string>
     <string name="processing_scene_image_progress">Generating scene image %1$d of %2$d…</string>
+    <string name="processing_notification_title">Processing story</string>
+    <string name="processing_notification_channel_name">Story processing</string>
+    <string name="processing_notification_channel_description">Keeps story generation running while ImmaginarIA is in the background.</string>
     <string name="export_story">Export</string>
     <string name="share_story_chooser_title">Share “%1$s”</string>
     <string name="export_story_message">Storyboard exported from ImmaginarIA: %1$s</string>
