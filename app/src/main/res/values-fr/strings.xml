@@ -37,10 +37,6 @@
     <string name="style_photorealistic">Photorealiste</string>
     <string name="style_cartoon">Cartoon</string>
     <string name="style_manga">Manga</string>
-    <string name="image_generator">Générateur d\'images</string>
-    <string name="image_provider_openrouter">OpenRouter – Nano Banana</string>
-    <string name="image_provider_fal">fal.ai Flux Schnell</string>
-    <string name="image_provider_fal_kotlin">fal.ai client Kotlin (expérimental)</string>
     <string name="image_generation_error">Échec de la génération de l\'image</string>
     <string name="story_tab">Histoire</string>
     <string name="share_llm_logs">Partager les journaux LLM</string>
@@ -56,9 +52,13 @@
     <string name="delete_completed_story_message">Voulez-vous vraiment supprimer “%1$s” ? Cette action est irréversible.</string>
     <string name="processing">Traitement</string>
     <string name="processing_complete">Traitement terminé</string>
+    <string name="processing_failed">Échec du traitement</string>
     <string name="processing_character_image_progress">Génération de l\'image du personnage %1$d sur %2$d…</string>
     <string name="processing_environment_image_progress">Génération de l\'image de l\'environnement %1$d sur %2$d…</string>
     <string name="processing_scene_image_progress">Génération de l\'image de la scène %1$d sur %2$d…</string>
+    <string name="processing_notification_title">Traitement de l\'histoire</string>
+    <string name="processing_notification_channel_name">Traitement de l\'histoire</string>
+    <string name="processing_notification_channel_description">Maintient la génération de l\'histoire lorsque ImmaginarIA est en arrière-plan.</string>
     <string name="export_story">Exporter</string>
     <string name="share_story_chooser_title">Partager “%1$s”</string>
     <string name="export_story_message">Storyboard exporté depuis ImmaginarIA : %1$s</string>
