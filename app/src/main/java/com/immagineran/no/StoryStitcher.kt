@@ -60,9 +60,13 @@ class StoryStitcher(
                           "properties": {
                             "language": { "type": "string" },
                             "story_original": { "type": "string" },
-                            "story_english": { "type": "string" }
+                            "story_english": { "type": "string" },
+                            "title_short": {
+                              "type": "string",
+                              "description": "Concise story title under 8 words and 48 characters"
+                            }
                           },
-                          "required": ["language", "story_original", "story_english"]
+                          "required": ["language", "story_original", "story_english", "title_short"]
                         }
                         """.trimIndent(),
                     )
