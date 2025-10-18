@@ -235,6 +235,7 @@ class SceneBuilder(
                     Scene(
                         captionOriginal = narrativeOriginal,
                         captionEnglish = narrativeEnglish,
+                        environmentName = envName.takeIf { it.isNotBlank() },
                         environment = env,
                         characters = chars,
                     )

@@ -125,9 +125,71 @@ class EnvironmentExtractionStep(
     private val localizer: StoryAssetLocalizer = StoryAssetLocalizer(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
-        val story = context.storyEnglish ?: context.story ?: context.storyOriginal ?: return
-        val extracted = extractor.extractEnvironments(story, context.storyLanguage)
-        context.environments = localizer.localizeEnvironments(extracted, context.storyLanguage)
+        val scenes = context.scenes
+        if (scenes.isEmpty()) {
+            context.environments = emptyList()
+            return
+        }
+
+        val uniqueEnvironments = mutableListOf<EnvironmentAsset>()
+        val sceneAssignments = mutableListOf<EnvironmentAsset?>()
+        var previousEnvironment: EnvironmentAsset? = null
+
+        fun matchesExisting(candidate: EnvironmentAsset, existing: EnvironmentAsset): Boolean {
+            val candidateName = candidate.displayName.trim()
+            val existingName = existing.displayName.trim()
+            if (candidateName.equals(existingName, ignoreCase = true)) return true
+            if (candidate.matchesName(existingName)) return true
+            if (existing.matchesName(candidateName)) return true
+            return false
+        }
+
+        scenes.forEach { scene ->
+            val candidate = extractor.extractEnvironmentForScene(
+                scene = scene,
+                sourceLanguage = context.storyLanguage,
+                previousEnvironmentName = previousEnvironment?.displayName,
+            )
+            val resolved = when {
+                candidate == null -> scene.environment
+                previousEnvironment != null && matchesExisting(candidate, previousEnvironment!!) -> previousEnvironment
+                else -> {
+                    uniqueEnvironments.firstOrNull { existing -> matchesExisting(candidate, existing) }
+                        ?: candidate.also { uniqueEnvironments += it }
+                }
+            }
+            sceneAssignments += resolved ?: candidate
+            previousEnvironment = resolved ?: candidate
+        }
+
+        if (uniqueEnvironments.isEmpty()) {
+            context.environments = emptyList()
+            context.scenes = scenes.mapIndexed { index, scene ->
+                val assigned = sceneAssignments.getOrNull(index)
+                val environmentName = assigned?.displayName ?: scene.environmentName
+                scene.copy(
+                    environment = assigned ?: scene.environment,
+                    environmentName = environmentName,
+                )
+            }
+            return
+        }
+
+        val localized = localizer.localizeEnvironments(uniqueEnvironments, context.storyLanguage)
+        val mapping = uniqueEnvironments.mapIndexed { index, asset -> asset to localized[index] }.toMap()
+        val updatedScenes = scenes.mapIndexed { index, scene ->
+            val assigned = sceneAssignments.getOrNull(index)
+            val localizedAsset = assigned?.let { mapping[it] } ?: scene.environment
+            val environmentName = localizedAsset?.displayName
+                ?: assigned?.displayName
+                ?: scene.environmentName
+            scene.copy(
+                environment = localizedAsset,
+                environmentName = environmentName,
+            )
+        }
+        context.environments = localized
+        context.scenes = updatedScenes
     }
 }
 

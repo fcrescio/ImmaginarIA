@@ -55,6 +55,7 @@ data class EnvironmentAsset(
 data class Scene(
     val captionOriginal: String,
     val captionEnglish: String,
+    val environmentName: String? = null,
     val environment: EnvironmentAsset? = null,
     val characters: List<CharacterAsset> = emptyList(),
     val image: String? = null,

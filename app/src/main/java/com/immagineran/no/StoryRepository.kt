@@ -129,6 +129,7 @@ object StoryRepository {
                         Scene(
                             captionOriginal = captionOriginal,
                             captionEnglish = captionEnglish,
+                            environmentName = envName.takeIf { it.isNotBlank() },
                             environment = env,
                             characters = chars,
                             image = sObj.optString("image", null)
@@ -235,7 +236,8 @@ object StoryRepository {
                 scObj.put("caption_original", scene.captionOriginal)
                 scObj.put("caption_english", scene.captionEnglish)
                 scObj.put("text", scene.displayCaptionOriginal)
-                scene.environment?.let { scObj.put("environment", it.displayName) }
+                val environmentLabel = scene.environment?.displayName ?: scene.environmentName
+                environmentLabel?.let { scObj.put("environment", it) }
                 val charNames = JSONArray()
                 scene.characters.forEach { c -> charNames.put(c.displayName) }
                 scObj.put("characters", charNames)

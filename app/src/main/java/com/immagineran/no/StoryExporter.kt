@@ -148,9 +148,8 @@ object StoryExporter {
             val sceneObj = JSONObject()
             sceneObj.put("caption_original", scene.captionOriginal)
             sceneObj.put("caption_english", scene.captionEnglish)
-            scene.environment?.let { environment ->
-                sceneObj.put("environment", environment.displayName)
-            }
+            val environmentLabel = scene.environment?.displayName ?: scene.environmentName
+            environmentLabel?.let { sceneObj.put("environment", it) }
             if (scene.characters.isNotEmpty()) {
                 val characterArray = JSONArray()
                 scene.characters.forEach { characterArray.put(it.displayName) }

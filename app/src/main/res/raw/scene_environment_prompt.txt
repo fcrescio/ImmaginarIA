@@ -1,0 +1,18 @@
+You are selecting a richly detailed environment for a single illustrated scene.
+Follow these requirements:
+- Return exactly one environment object in a JSON array.
+- Describe the location with at most 55 English words that emphasize concrete sensory details.
+- Avoid reusing the previous scene's location unless the narrative makes it clear the story stays there.
+- {LANGUAGE_HINT}
+- {PREVIOUS_HINT}
+- {ENVIRONMENT_HINT}
+Respond with a JSON array that contains one object with the keys "name" and "description", both in English.
+
+Scene narrative (original language):
+{SCENE_ORIGINAL}
+
+Scene narrative (English translation):
+{SCENE_ENGLISH}
+
+Characters present:
+{CHARACTER_LIST}
