@@ -179,6 +179,50 @@ class StoryAssetExtractor(
         }
     }
 
+    suspend fun extractEnvironmentForScene(
+        scene: Scene,
+        sourceLanguage: String? = null,
+        previousEnvironmentName: String? = null,
+    ): EnvironmentAsset? {
+        val languageHint = sourceLanguage?.takeIf { it.isNotBlank() && !it.equals("english", ignoreCase = true) }
+            ?.let {
+                "The original story language is $it. Translate location names and descriptions into natural English while keeping important cultural nuances."
+            }
+            ?: "Ensure the environment name and description you output are written in clear, natural English."
+        val previousHint = previousEnvironmentName?.takeIf { it.isNotBlank() }
+            ?.let {
+                "The previous scene took place in \"$it\". Only reuse that location if the narrative clearly remains there; otherwise choose a distinct setting."
+            }
+            ?: "There is no previous scene to reference."
+        val environmentHint = scene.environmentName?.takeIf { it.isNotBlank() }
+            ?.let { "Suggested environment from the scene builder: $it" }
+            ?: "No suggested environment name was provided."
+        val characters = scene.characters.joinToString(separator = "\n") { character ->
+            "- ${character.displayName}: ${character.displayDescription}"
+        }.ifBlank { "- None" }
+        val prompt = PromptTemplates.load(
+            appContext,
+            R.raw.scene_environment_prompt,
+            mapOf(
+                "LANGUAGE_HINT" to languageHint,
+                "PREVIOUS_HINT" to previousHint,
+                "ENVIRONMENT_HINT" to environmentHint,
+                "SCENE_ORIGINAL" to scene.captionOriginal.ifBlank { "(Not provided)" },
+                "SCENE_ENGLISH" to scene.captionEnglish.ifBlank { "(Not provided)" },
+                "CHARACTER_LIST" to characters,
+            ),
+        ).trim()
+        val arr = callLLM(prompt) ?: return null
+        return parseAssets(arr, "environment") { name, description ->
+            EnvironmentAsset(
+                name = name,
+                description = description,
+                nameEnglish = name,
+                descriptionEnglish = description,
+            )
+        }.firstOrNull()
+    }
+
     suspend fun extractEnvironments(story: String, sourceLanguage: String? = null): List<EnvironmentAsset> {
         val languageHint = sourceLanguage?.takeIf { it.isNotBlank() && !it.equals("english", ignoreCase = true) }
             ?.let {

@@ -76,11 +76,11 @@ class StoryProcessingWorker(
         if (SettingsManager.isCharacterImageGenerationEnabled(applicationContext)) {
             steps.add(CharacterImageGenerationStep(applicationContext))
         }
+        steps.add(SceneCompositionStep(applicationContext))
         steps.add(EnvironmentExtractionStep(applicationContext))
         if (SettingsManager.isEnvironmentImageGenerationEnabled(applicationContext)) {
             steps.add(EnvironmentImageGenerationStep(applicationContext))
         }
-        steps.add(SceneCompositionStep(applicationContext))
         steps.add(SceneImageGenerationStep(applicationContext))
         return steps
     }

@@ -36,7 +36,12 @@ class SceneImageGenerationStep(
             val file = File(dir, "scene_${idx}.png")
             val description = buildString {
                 append(scene.displayCaptionEnglish)
-                scene.environment?.let { append(" Environment: ${it.displayDescription}.") }
+                when {
+                    scene.environment != null ->
+                        append(" Environment: ${scene.environment.displayDescription}.")
+                    !scene.environmentName.isNullOrBlank() ->
+                        append(" Environment: ${scene.environmentName}.")
+                }
                 if (scene.characters.isNotEmpty()) {
                     append(" Characters: ")
                     append(scene.characters.joinToString { it.displayDescription })
