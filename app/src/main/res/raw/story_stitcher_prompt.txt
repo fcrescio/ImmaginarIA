@@ -1,8 +1,9 @@
 You are a multilingual storyteller. Analyze the provided prompt and transcript segments to detect the primary language used.
 Write a cohesive narrative in that same language, keeping the voice and details consistent.
 Also produce an English translation of the narrative.
-Respond strictly with JSON containing the keys 'language', 'story_original', and 'story_english'.
+Respond strictly with JSON containing the keys 'language', 'story_original', 'story_english', and 'title_short'.
 Language should be identified using either the common name or ISO 639-1 code.
+'title_short' must be a concise title (maximum 8 words and 48 characters) suitable for a UI heading.
 
 Prompt:
 {PROMPT}

@@ -146,9 +146,14 @@ class MainActivity : ComponentActivity() {
                                             } else {
                                                 segments.filterNotNull().map { it.absolutePath }
                                             }
+                                            val resolvedTitle = resolveFinalTitle(
+                                                title,
+                                                procContext?.storyTitle,
+                                                timestamp,
+                                            )
                                             if (storyToResume != null) {
                                                 val updated = storyToResume!!.copy(
-                                                    title = title,
+                                                    title = resolvedTitle,
                                                     segments = segmentPaths,
                                                     content = content,
                                                     language = procContext?.storyLanguage
@@ -167,7 +172,7 @@ class MainActivity : ComponentActivity() {
                                             } else {
                                                 val story = Story(
                                                     id = storyId,
-                                                    title = title,
+                                                    title = resolvedTitle,
                                                     timestamp = timestamp,
                                                     content = content,
                                                     language = procContext?.storyLanguage,
@@ -213,9 +218,45 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                }
             }
         }
+    }
+}
+
+    private fun resolveFinalTitle(
+        userTitle: String,
+        extractedTitle: String?,
+        timestamp: Long,
+    ): String {
+        val dateLabel = DateFormat.getDateTimeInstance().format(Date(timestamp))
+        val defaultTitle = getString(R.string.default_story_title, dateLabel)
+        val sanitizedExtracted = sanitizeExtractedTitle(extractedTitle)
+        return when {
+            sanitizedExtracted != null -> getString(
+                R.string.story_title_with_date,
+                sanitizedExtracted,
+                dateLabel,
+            )
+            userTitle.isNotBlank() -> userTitle
+            else -> defaultTitle
+        }
+    }
+
+    private fun sanitizeExtractedTitle(raw: String?): String? {
+        val normalized = raw
+            ?.replace('\n', ' ')
+            ?.replace(Regex("\\s+"), " ")
+            ?.trim()
+            ?: return null
+        if (normalized.isEmpty()) return null
+        val withoutQuotes = normalized.trim('"', '\'', '“', '”')
+        if (withoutQuotes.isEmpty()) return null
+        val cleaned = withoutQuotes.trimEnd('.', '!', '?', ':', ';', ',')
+        if (cleaned.isEmpty()) return null
+        if (cleaned.length > 48) return null
+        val wordCount = cleaned.split(Regex("\\s+")).count { it.isNotBlank() }
+        if (wordCount > 8) return null
+        return cleaned
     }
 }
 

@@ -4,6 +4,7 @@
     <string name="no_stories">No stories yet</string>
     <string name="start_new_session">Start new session</string>
     <string name="default_story_title">Session started %1$s</string>
+    <string name="story_title_with_date">%1$s - %2$s</string>
     <string name="record">Record</string>
     <string name="stop">Stop</string>
     <string name="recording_in_progress">Recording in progress</string>

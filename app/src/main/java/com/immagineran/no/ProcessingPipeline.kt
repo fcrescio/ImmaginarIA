@@ -14,6 +14,7 @@ data class ProcessingContext(
     val segments: List<String>,
     val id: Long,
     var story: String? = null,
+    var storyTitle: String? = null,
     var storyLanguage: String? = null,
     var storyOriginal: String? = null,
     var storyEnglish: String? = null,
@@ -62,6 +63,7 @@ class StoryStitchingStep(
         context.storyJson = stitched
         if (stitched.isNullOrBlank()) {
             context.story = null
+            context.storyTitle = null
             context.storyLanguage = null
             context.storyOriginal = null
             context.storyEnglish = null
@@ -71,11 +73,13 @@ class StoryStitchingStep(
 
         val json = runCatching { JSONObject(stitched) }.getOrNull()
         if (json != null) {
+            context.storyTitle = json.optString("title_short").takeIf { it.isNotBlank() }
             context.storyLanguage = json.optString("language").takeIf { it.isNotBlank() }
             context.storyOriginal = json.optString("story_original").takeIf { it.isNotBlank() }
             context.storyEnglish = json.optString("story_english").takeIf { it.isNotBlank() }
             context.storyContextTags = collectStoryTags(json)
         } else {
+            context.storyTitle = null
             context.storyLanguage = null
             context.storyOriginal = stitched
             context.storyEnglish = stitched
