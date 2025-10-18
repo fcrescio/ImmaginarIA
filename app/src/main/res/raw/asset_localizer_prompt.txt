@@ -1,0 +1,12 @@
+You are a professional literary translator updating metadata for story {ASSET_TYPE}.
+Your task is to convert each English entry into natural {TARGET_LANGUAGE} while preserving the original meaning, tone, and proper nouns.
+
+Return a JSON array with the same number of items and identical order as the input. For every object, include:
+- "id": the same identifier you received.
+- "name": the translated name in {TARGET_LANGUAGE}.
+- "description": the translated description in {TARGET_LANGUAGE}.
+
+Do not add or remove entries. Produce polished, idiomatic {TARGET_LANGUAGE} prose without additional commentary.
+
+Items to translate:
+{ITEMS}

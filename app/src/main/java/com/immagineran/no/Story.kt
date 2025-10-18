@@ -13,6 +13,12 @@ data class CharacterAsset(
     val displayDescription: String
         get() = descriptionEnglish?.takeIf { it.isNotBlank() } ?: description
 
+    val localizedName: String
+        get() = name.takeIf { it.isNotBlank() } ?: nameEnglish ?: name
+
+    val localizedDescription: String
+        get() = description.takeIf { it.isNotBlank() } ?: descriptionEnglish ?: description
+
     fun matchesName(candidate: String): Boolean {
         if (candidate.equals(nameEnglish, ignoreCase = true)) return true
         if (candidate.equals(name, ignoreCase = true)) return true
@@ -32,6 +38,12 @@ data class EnvironmentAsset(
 
     val displayDescription: String
         get() = descriptionEnglish?.takeIf { it.isNotBlank() } ?: description
+
+    val localizedName: String
+        get() = name.takeIf { it.isNotBlank() } ?: nameEnglish ?: name
+
+    val localizedDescription: String
+        get() = description.takeIf { it.isNotBlank() } ?: descriptionEnglish ?: description
 
     fun matchesName(candidate: String): Boolean {
         if (candidate.equals(nameEnglish, ignoreCase = true)) return true

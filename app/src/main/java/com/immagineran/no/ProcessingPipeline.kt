@@ -15,6 +15,7 @@ data class ProcessingContext(
     val id: Long,
     var story: String? = null,
     var storyTitle: String? = null,
+    var storyTitleEnglish: String? = null,
     var storyLanguage: String? = null,
     var storyOriginal: String? = null,
     var storyEnglish: String? = null,
@@ -57,6 +58,7 @@ class ProcessingPipeline(private val steps: List<ProcessingStep>) {
 class StoryStitchingStep(
     private val appContext: Context,
     private val stitcher: StoryStitcher = StoryStitcher(appContext),
+    private val localizer: StoryAssetLocalizer = StoryAssetLocalizer(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val stitched = stitcher.stitch(context.prompt, context.segments)
@@ -73,13 +75,16 @@ class StoryStitchingStep(
 
         val json = runCatching { JSONObject(stitched) }.getOrNull()
         if (json != null) {
-            context.storyTitle = json.optString("title_short").takeIf { it.isNotBlank() }
+            val title = json.optString("title_short").takeIf { it.isNotBlank() }
+            context.storyTitleEnglish = title
+            context.storyTitle = title
             context.storyLanguage = json.optString("language").takeIf { it.isNotBlank() }
             context.storyOriginal = json.optString("story_original").takeIf { it.isNotBlank() }
             context.storyEnglish = json.optString("story_english").takeIf { it.isNotBlank() }
             context.storyContextTags = collectStoryTags(json)
         } else {
             context.storyTitle = null
+            context.storyTitleEnglish = null
             context.storyLanguage = null
             context.storyOriginal = stitched
             context.storyEnglish = stitched
@@ -92,26 +97,37 @@ class StoryStitchingStep(
             context.storyOriginal = context.storyEnglish
         }
         context.story = context.storyEnglish ?: context.storyOriginal
+
+        if (!context.storyLanguage.isNullOrBlank() && !context.storyTitleEnglish.isNullOrBlank()) {
+            val localizedTitle = localizer.localizeTitle(context.storyTitleEnglish, context.storyLanguage)
+            if (!localizedTitle.isNullOrBlank()) {
+                context.storyTitle = localizedTitle
+            }
+        }
     }
 }
 
 class CharacterExtractionStep(
     private val appContext: Context,
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
+    private val localizer: StoryAssetLocalizer = StoryAssetLocalizer(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val story = context.storyEnglish ?: context.story ?: context.storyOriginal ?: return
-        context.characters = extractor.extractCharacters(story, context.storyLanguage)
+        val extracted = extractor.extractCharacters(story, context.storyLanguage)
+        context.characters = localizer.localizeCharacters(extracted, context.storyLanguage)
     }
 }
 
 class EnvironmentExtractionStep(
     private val appContext: Context,
     private val extractor: StoryAssetExtractor = StoryAssetExtractor(appContext),
+    private val localizer: StoryAssetLocalizer = StoryAssetLocalizer(appContext),
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         val story = context.storyEnglish ?: context.story ?: context.storyOriginal ?: return
-        context.environments = extractor.extractEnvironments(story, context.storyLanguage)
+        val extracted = extractor.extractEnvironments(story, context.storyLanguage)
+        context.environments = localizer.localizeEnvironments(extracted, context.storyLanguage)
     }
 }
 
