@@ -39,6 +39,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FAL_KEY: ${{ secrets.FAL_KEY }}
           VERSION_NAME: ${{ steps.versioning.outputs.version_name }}
           VERSION_CODE: ${{ steps.versioning.outputs.version_code }}
         run: ./gradlew assembleRelease
