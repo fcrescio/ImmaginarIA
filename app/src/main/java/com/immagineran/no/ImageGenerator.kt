@@ -58,7 +58,8 @@ class ImageGenerator(
         val messages = JSONArray().apply { put(message(prompt)) }
         repeat(5) {
             val root = JSONObject().apply {
-                put("model", "google/gemini-2.5-flash-image-preview")
+                //put("model", "google/gemini-2.5-flash-image-preview")
+                put("model", "openai/gpt-5-image-mini")
                 put("messages", messages)
             }
             val reqJson = root.toString()
