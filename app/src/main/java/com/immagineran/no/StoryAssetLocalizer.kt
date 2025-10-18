@@ -251,7 +251,7 @@ class StoryAssetLocalizer(
             R.raw.asset_localizer_prompt,
             mapOf(
                 "ASSET_TYPE" to "characters",
-                "TARGET_LANGUAGE" to language ?: "",
+                "TARGET_LANGUAGE" to (language ?: ""),
                 "ITEMS" to items.toString(2),
             ),
         ).trim()
@@ -320,7 +320,7 @@ class StoryAssetLocalizer(
             R.raw.asset_localizer_prompt,
             mapOf(
                 "ASSET_TYPE" to "environments",
-                "TARGET_LANGUAGE" to language ?: "",
+                "TARGET_LANGUAGE" to (language ?: ""),
                 "ITEMS" to items.toString(2),
             ),
         ).trim()
@@ -366,7 +366,7 @@ class StoryAssetLocalizer(
             appContext,
             R.raw.title_localizer_prompt,
             mapOf(
-                "TARGET_LANGUAGE" to language ?: "",
+                "TARGET_LANGUAGE" to (language ?: ""),
                 "TITLE" to titleEnglish,
             ),
         ).trim()
