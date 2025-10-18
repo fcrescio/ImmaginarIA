@@ -277,6 +277,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+}
+
 /**
  * Splash screen showing the placeholder logo and app title.
  */
