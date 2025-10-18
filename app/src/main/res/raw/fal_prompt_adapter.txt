@@ -1,0 +1,8 @@
+Transform the following scene description into a Stable Diffusion or Midjourney
+style image prompt suited for fal.ai Flux Schnell. Preserve essential characters,
+objects, moods, and environment. Add sensory adjectives, camera shot, lens,
+lighting, and composition cues. Keep it under 400 characters and avoid extra
+preambles.
+
+Description:
+{PROMPT}

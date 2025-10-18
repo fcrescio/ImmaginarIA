@@ -37,8 +37,14 @@ class ImageGenerator(
             crashlytics.log("ImageGenerator provider: $provider")
             when (provider) {
                 ImageProvider.OPENROUTER -> generateWithOpenRouter(prompt, file)
-                ImageProvider.FAL -> generateWithFal(prompt, file)
-                ImageProvider.FAL_KOTLIN -> generateWithFalKotlin(prompt, file)
+                ImageProvider.FAL -> {
+                    val adaptedPrompt = adaptPromptForFal(prompt)
+                    generateWithFal(adaptedPrompt, file)
+                }
+                ImageProvider.FAL_KOTLIN -> {
+                    val adaptedPrompt = adaptPromptForFal(prompt)
+                    generateWithFalKotlin(adaptedPrompt, file)
+                }
             }
         } catch (e: Exception) {
             Log.e("ImageGenerator", "Generation error", e)
@@ -241,6 +247,87 @@ class ImageGenerator(
         Log.w("ImageGenerator", "fal.ai kotlin response missing image url")
         crashlytics.log("fal.ai kotlin response missing image url")
         return null
+    }
+
+    private fun adaptPromptForFal(originalPrompt: String): String {
+        val key = BuildConfig.OPENROUTER_API_KEY
+        if (key.isBlank()) {
+            Log.w("ImageGenerator", "Missing OpenRouter API key for fal.ai prompt adaptation")
+            crashlytics.log("OpenRouter API key missing for fal prompt adaptation")
+            return originalPrompt
+        }
+
+        val systemMessage =
+            "You are an expert prompt engineer for Stable Diffusion and Midjourney. " +
+                "Respond only with the final improved prompt text optimized for fal.ai Flux Schnell."
+        val userPrompt = PromptTemplates.load(
+            appContext,
+            R.raw.fal_prompt_adapter,
+            mapOf("PROMPT" to originalPrompt),
+        )
+        val requestJson = JSONObject().apply {
+            put("model", "mistralai/mistral-nemo")
+            put(
+                "messages",
+                JSONArray().apply {
+                    put(
+                        JSONObject().apply {
+                            put("role", "system")
+                            put("content", systemMessage)
+                        },
+                    )
+                    put(
+                        JSONObject().apply {
+                            put("role", "user")
+                            put("content", userPrompt)
+                        },
+                    )
+                },
+            )
+        }
+        val body = requestJson.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("https://openrouter.ai/api/v1/chat/completions")
+            .header("Authorization", "Bearer $key")
+            .header("Content-Type", "application/json")
+            .post(body)
+            .build()
+
+        return runCatching {
+            client.newCall(request).execute().use { resp ->
+                val respBody = resp.body?.string()
+                LlmLogger.log(appContext, "ImageGeneratorFalPrompt", requestJson.toString(), respBody)
+                if (!resp.isSuccessful) {
+                    Log.w(
+                        "ImageGenerator",
+                        "OpenRouter HTTP ${'$'}{resp.code} while adapting fal.ai prompt",
+                    )
+                    crashlytics.log("OpenRouter prompt adaptation failed: ${'$'}{resp.code}")
+                    return originalPrompt
+                }
+                val json = JSONObject(respBody ?: return originalPrompt)
+                val choices = json.optJSONArray("choices") ?: return originalPrompt
+                if (choices.length() == 0) return originalPrompt
+                val message = choices.getJSONObject(0).optJSONObject("message")
+                    ?: return originalPrompt
+                val content = message.optString("content")
+                val cleaned = content
+                    .replaceFirst(Regex("^```[a-zA-Z]*\\s*"), "")
+                    .replaceFirst(Regex("\\s*```$"), "")
+                    .trim()
+                if (cleaned.isNotBlank()) {
+                    Log.d("ImageGenerator", "fal.ai adapted prompt: ${'$'}cleaned")
+                    crashlytics.log("fal.ai prompt adapted")
+                    return cleaned
+                }
+                originalPrompt
+            }
+        }.getOrElse { e ->
+            Log.e("ImageGenerator", "Prompt adaptation error", e)
+            LlmLogger.log(appContext, "ImageGeneratorFalPrompt", originalPrompt, e.message)
+            crashlytics.recordException(e)
+            originalPrompt
+        }
     }
 
     private fun pollFalResponse(responseUrl: String, key: String, file: File): String? {
