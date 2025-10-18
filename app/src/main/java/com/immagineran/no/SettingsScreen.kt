@@ -17,7 +17,6 @@ fun SettingsScreen(onBack: () -> Unit, onAdvanced: () -> Unit) {
     val context = LocalContext.current
     var selectedTranscription by remember { mutableStateOf(SettingsManager.getTranscriptionMethod(context)) }
     var selectedStyle by remember { mutableStateOf(SettingsManager.getImageStyle(context)) }
-    var selectedProvider by remember { mutableStateOf(SettingsManager.getImageProvider(context)) }
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.h5)
         Spacer(modifier = Modifier.height(16.dp))
@@ -57,24 +56,6 @@ fun SettingsScreen(onBack: () -> Unit, onAdvanced: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = stringResource(R.string.image_generator),
-            style = MaterialTheme.typography.h6,
-        )
-        ImageProvider.values().forEach { provider ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            ) {
-                RadioButton(
-                    selected = provider == selectedProvider,
-                    onClick = { selectedProvider = provider },
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(id = provider.labelRes))
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = onAdvanced,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -86,7 +67,6 @@ fun SettingsScreen(onBack: () -> Unit, onAdvanced: () -> Unit) {
             onClick = {
                 SettingsManager.setTranscriptionMethod(context, selectedTranscription)
                 SettingsManager.setImageStyle(context, selectedStyle)
-                SettingsManager.setImageProvider(context, selectedProvider)
                 onBack()
             },
             modifier = Modifier.align(Alignment.CenterHorizontally),

@@ -44,7 +44,7 @@ class SceneImageGenerationStep(
             }
             val enrichedDescription = context.contextualizePrompt(description)
             val prompt = PromptTemplates.load(appContext, R.raw.scene_image_prompt, style, enrichedDescription)
-            val path = generator.generate(prompt, file)
+            val path = generator.generate(prompt, file, ImageProvider.OPENROUTER)
             updated += scene.copy(image = path)
         }
         context.scenes = updated

@@ -146,7 +146,7 @@ class CharacterImageGenerationStep(
             val file = File(dir, "character_${idx}.png")
             val enrichedDescription = context.contextualizePrompt(asset.description)
             val prompt = PromptTemplates.load(appContext, R.raw.character_image_prompt, style, enrichedDescription)
-            val path = generator.generate(prompt, file)
+            val path = generator.generate(prompt, file, ImageProvider.FAL)
             updated += asset.copy(image = path)
         }
         context.characters = updated
@@ -168,7 +168,7 @@ class EnvironmentImageGenerationStep(
             val file = File(dir, "environment_${idx}.png")
             val enrichedDescription = context.contextualizePrompt(asset.description)
             val prompt = PromptTemplates.load(appContext, R.raw.environment_image_prompt, style, enrichedDescription)
-            val path = generator.generate(prompt, file)
+            val path = generator.generate(prompt, file, ImageProvider.FAL)
             updated += asset.copy(image = path)
         }
         context.environments = updated

@@ -10,8 +10,8 @@ import ai.fal.client.kt.createFalClient
 import ai.fal.client.kt.subscribe
 import ai.fal.client.queue.QueueStatus
 import ai.fal.client.type.RequestLog
-import com.google.gson.JsonObject
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -30,20 +30,19 @@ class ImageGenerator(
     /**
      * Generates an image based on the given [prompt].
      */
-    suspend fun generate(prompt: String, file: File): String? = withContext(Dispatchers.IO) {
+    suspend fun generate(
+        prompt: String,
+        file: File,
+        provider: ImageProvider,
+    ): String? = withContext(Dispatchers.IO) {
         try {
-            val provider = SettingsManager.getImageProvider(appContext)
             Log.d("ImageGenerator", "Selected image provider: $provider")
             crashlytics.log("ImageGenerator provider: $provider")
             when (provider) {
                 ImageProvider.OPENROUTER -> generateWithOpenRouter(prompt, file)
                 ImageProvider.FAL -> {
                     val adaptedPrompt = adaptPromptForFal(prompt)
-                    generateWithFal(adaptedPrompt, file)
-                }
-                ImageProvider.FAL_KOTLIN -> {
-                    val adaptedPrompt = adaptPromptForFal(prompt)
-                    generateWithFalKotlin(adaptedPrompt, file)
+                    generateWithFalClient(adaptedPrompt, file)
                 }
             }
         } catch (e: Exception) {
@@ -103,7 +102,7 @@ class ImageGenerator(
         return null
     }
 
-    private fun generateWithFal(prompt: String, file: File): String? {
+    private suspend fun generateWithFalClient(prompt: String, file: File): String? {
         val key = BuildConfig.FAL_API_KEY
         if (key.isBlank()) {
             Log.e("ImageGenerator", "Missing fal.ai API key")
@@ -118,58 +117,6 @@ class ImageGenerator(
         }
         Log.d("ImageGenerator", "fal.ai request body: $requestJson")
         crashlytics.log("fal.ai request prepared")
-        val body = requestJson.toString().toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url(FAL_API_URL)
-            .header("Authorization", "Key $key")
-            .header("Content-Type", "application/json")
-            .post(body)
-            .build()
-        client.newCall(request).execute().use { resp ->
-            val respBody = resp.body?.string()
-            LlmLogger.log(appContext, "ImageGeneratorFal", requestJson.toString(), respBody)
-            if (!resp.isSuccessful) {
-                Log.e("ImageGenerator", "fal.ai HTTP ${resp.code}")
-                crashlytics.log("fal.ai image failed: ${resp.code}")
-                return null
-            }
-            val json = JSONObject(respBody ?: return null)
-            Log.d("ImageGenerator", "fal.ai initial response: $json")
-            extractFalImageUrl(json)?.let { url ->
-                Log.d("ImageGenerator", "fal.ai returned image url: $url")
-                return downloadImage(url, file)
-            }
-            val response = json.optJSONObject("response")
-            extractFalImageUrl(response)?.let { url ->
-                Log.d("ImageGenerator", "fal.ai response object contained url: $url")
-                return downloadImage(url, file)
-            }
-            val responseUrl = json.optString("response_url", "")
-            if (responseUrl.isNotBlank()) {
-                Log.d("ImageGenerator", "fal.ai response_url present: $responseUrl")
-                return pollFalResponse(responseUrl, key, file)
-            }
-            Log.w("ImageGenerator", "fal.ai response missing image url")
-            crashlytics.log("fal.ai response missing image url")
-        }
-        return null
-    }
-
-    private suspend fun generateWithFalKotlin(prompt: String, file: File): String? {
-        val key = BuildConfig.FAL_API_KEY
-        if (key.isBlank()) {
-            Log.e("ImageGenerator", "Missing fal.ai API key")
-            crashlytics.log("fal.ai API key missing")
-            LlmLogger.log(appContext, "ImageGeneratorFalKotlin", prompt, "Missing API key")
-            return null
-        }
-        val requestJson = JSONObject().apply {
-            put("prompt", prompt)
-            put("image_size", "square")
-            put("num_images", 1)
-        }
-        Log.d("ImageGenerator", "fal.ai kotlin request body: $requestJson")
-        crashlytics.log("fal.ai kotlin request prepared")
         val clientConfig = ClientConfig.withCredentials(CredentialsResolver.fromApiKey(key))
         val fal = createFalClient(clientConfig)
         val input = mapOf<String, Any?>(
@@ -214,7 +161,7 @@ class ImageGenerator(
         }
         LlmLogger.log(
             appContext,
-            "ImageGeneratorFalKotlin",
+            "ImageGeneratorFal",
             requestLogJson.toString(),
             responseJsonString,
         )
@@ -225,27 +172,27 @@ class ImageGenerator(
         }
         val json = responseJsonString.takeIf { it.isNotBlank() }?.let { JSONObject(it) }
         if (json == null) {
-            Log.w("ImageGenerator", "fal.ai kotlin response empty")
-            crashlytics.log("fal.ai kotlin response empty")
+            Log.w("ImageGenerator", "fal.ai client response empty")
+            crashlytics.log("fal.ai client response empty")
             return null
         }
         extractFalImageUrl(json)?.let { url ->
-            Log.d("ImageGenerator", "fal.ai kotlin returned image url: $url")
+            Log.d("ImageGenerator", "fal.ai client returned image url: $url")
             return downloadImage(url, file)
         }
         val response = json.optJSONObject("response")
         extractFalImageUrl(response)?.let { url ->
-            Log.d("ImageGenerator", "fal.ai kotlin response object contained url: $url")
+            Log.d("ImageGenerator", "fal.ai client response object contained url: $url")
             return downloadImage(url, file)
         }
         val responseUrl = json.optString("response_url", "")
         if (responseUrl.isNotBlank()) {
-            Log.d("ImageGenerator", "fal.ai kotlin response_url present: $responseUrl")
-            crashlytics.log("fal.ai kotlin response_url present")
+            Log.d("ImageGenerator", "fal.ai client response_url present: $responseUrl")
+            crashlytics.log("fal.ai client response_url present")
             return pollFalResponse(responseUrl, key, file)
         }
-        Log.w("ImageGenerator", "fal.ai kotlin response missing image url")
-        crashlytics.log("fal.ai kotlin response missing image url")
+        Log.w("ImageGenerator", "fal.ai client response missing image url")
+        crashlytics.log("fal.ai client response missing image url")
         return null
     }
 
@@ -452,6 +399,5 @@ class ImageGenerator(
 
     private companion object {
         private const val FAL_MODEL_NAME = "fal-ai/flux-1/schnell"
-        private const val FAL_API_URL = "https://fal.run/fal-ai/flux-1/schnell"
     }
 }
