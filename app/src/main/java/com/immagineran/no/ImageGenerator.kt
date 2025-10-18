@@ -25,8 +25,8 @@ class ImageGenerator(
     suspend fun generate(prompt: String, file: File): String? = withContext(Dispatchers.IO) {
         runCatching {
             val provider = SettingsManager.getImageProvider(appContext)
-            Log.d("ImageGenerator", "Selected image provider: ${'$'}provider")
-            crashlytics.log("ImageGenerator provider: ${'$'}provider")
+            Log.d("ImageGenerator", "Selected image provider: $provider")
+            crashlytics.log("ImageGenerator provider: $provider")
             when (provider) {
                 ImageProvider.OPENROUTER -> generateWithOpenRouter(prompt, file)
                 ImageProvider.FAL -> generateWithFal(prompt, file)
@@ -64,8 +64,8 @@ class ImageGenerator(
                 val respBody = resp.body?.string()
                 LlmLogger.log(appContext, "ImageGeneratorOpenRouter", reqJson, respBody)
                 if (!resp.isSuccessful) {
-                    Log.e("ImageGenerator", "OpenRouter HTTP ${'$'}{resp.code}")
-                    crashlytics.log("OpenRouter image failed: ${'$'}{resp.code}")
+                    Log.e("ImageGenerator", "OpenRouter HTTP ${resp.code}")
+                    crashlytics.log("OpenRouter image failed: ${resp.code}")
                     return null
                 }
                 val json = JSONObject(respBody ?: return null)
@@ -101,7 +101,7 @@ class ImageGenerator(
             put("image_size", "square")
             put("num_images", 1)
         }
-        Log.d("ImageGenerator", "fal.ai request body: ${'$'}requestJson")
+        Log.d("ImageGenerator", "fal.ai request body: $requestJson")
         crashlytics.log("fal.ai request prepared")
         val body = requestJson.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
@@ -114,24 +114,24 @@ class ImageGenerator(
             val respBody = resp.body?.string()
             LlmLogger.log(appContext, "ImageGeneratorFal", requestJson.toString(), respBody)
             if (!resp.isSuccessful) {
-                Log.e("ImageGenerator", "fal.ai HTTP ${'$'}{resp.code}")
-                crashlytics.log("fal.ai image failed: ${'$'}{resp.code}")
+                Log.e("ImageGenerator", "fal.ai HTTP ${resp.code}")
+                crashlytics.log("fal.ai image failed: ${resp.code}")
                 return null
             }
             val json = JSONObject(respBody ?: return null)
-            Log.d("ImageGenerator", "fal.ai initial response: ${'$'}json")
+            Log.d("ImageGenerator", "fal.ai initial response: $json")
             extractFalImageUrl(json)?.let { url ->
-                Log.d("ImageGenerator", "fal.ai returned image url: ${'$'}url")
+                Log.d("ImageGenerator", "fal.ai returned image url: $url")
                 return downloadImage(url, file)
             }
             val response = json.optJSONObject("response")
             extractFalImageUrl(response)?.let { url ->
-                Log.d("ImageGenerator", "fal.ai response object contained url: ${'$'}url")
+                Log.d("ImageGenerator", "fal.ai response object contained url: $url")
                 return downloadImage(url, file)
             }
             val responseUrl = json.optString("response_url", "")
             if (responseUrl.isNotBlank()) {
-                Log.d("ImageGenerator", "fal.ai response_url present: ${'$'}responseUrl")
+                Log.d("ImageGenerator", "fal.ai response_url present: $responseUrl")
                 return pollFalResponse(responseUrl, key, file)
             }
             Log.w("ImageGenerator", "fal.ai response missing image url")
@@ -155,15 +155,15 @@ class ImageGenerator(
                 }
                 LlmLogger.log(appContext, "ImageGeneratorFalPoll", pollRequestJson.toString(), body)
                 if (!resp.isSuccessful) {
-                    Log.e("ImageGenerator", "fal.ai poll HTTP ${'$'}{resp.code}")
-                    crashlytics.log("fal.ai poll failed: ${'$'}{resp.code}")
+                    Log.e("ImageGenerator", "fal.ai poll HTTP ${resp.code}")
+                    crashlytics.log("fal.ai poll failed: ${resp.code}")
                     return null
                 }
                 val json = JSONObject(body ?: return null)
-                Log.d("ImageGenerator", "fal.ai poll attempt ${'$'}{attempt + 1} response: ${'$'}json")
+                Log.d("ImageGenerator", "fal.ai poll attempt ${attempt + 1} response: $json")
                 val response = json.optJSONObject("response") ?: json
                 extractFalImageUrl(response)?.let { url ->
-                    Log.d("ImageGenerator", "fal.ai poll delivered url: ${'$'}url")
+                    Log.d("ImageGenerator", "fal.ai poll delivered url: $url")
                     return downloadImage(url, file)
                 }
                 val status = json.optString("status", "")
@@ -171,8 +171,8 @@ class ImageGenerator(
                     !status.equals("IN_QUEUE", true) &&
                     !status.equals("PENDING", true)
                 ) {
-                    Log.w("ImageGenerator", "fal.ai poll finished without image: status=${'$'}status")
-                    crashlytics.log("fal.ai poll finished without image: status=${'$'}status")
+                    Log.w("ImageGenerator", "fal.ai poll finished without image: status=$status")
+                    crashlytics.log("fal.ai poll finished without image: status=$status")
                     return null
                 }
             }
@@ -187,8 +187,8 @@ class ImageGenerator(
         val request = Request.Builder().url(url).get().build()
         client.newCall(request).execute().use { resp ->
             if (!resp.isSuccessful) {
-                Log.e("ImageGenerator", "Failed to download image: HTTP ${'$'}{resp.code}")
-                crashlytics.log("Image download failed: ${'$'}{resp.code}")
+                Log.e("ImageGenerator", "Failed to download image: HTTP ${resp.code}")
+                crashlytics.log("Image download failed: ${resp.code}")
                 val errorRequestJson = JSONObject().apply {
                     put("url", url)
                     put("status_code", resp.code)
@@ -207,7 +207,7 @@ class ImageGenerator(
                 }
             }
         }
-        Log.d("ImageGenerator", "fal.ai image downloaded to ${'$'}{file.absolutePath}")
+        Log.d("ImageGenerator", "fal.ai image downloaded to ${file.absolutePath}")
         return file.absolutePath
     }
 
