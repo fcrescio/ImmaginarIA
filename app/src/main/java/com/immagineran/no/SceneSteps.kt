@@ -47,12 +47,57 @@ class SceneImageGenerationStep(
                     append(scene.characters.joinToString { it.displayDescription })
                 }
             }
-            val enrichedDescription = context.contextualizePrompt(description)
+            val referenceNotes = buildReferenceNotes(scene, context)
+            val combinedDescription = buildString {
+                append(description.trim())
+                if (referenceNotes.isNotEmpty()) {
+                    if (isNotEmpty()) {
+                        append("\n\n")
+                    }
+                    append(referenceNotes.joinToString(separator = "\n"))
+                }
+            }
+            val enrichedDescription = context.contextualizePrompt(combinedDescription)
             val prompt = PromptTemplates.load(appContext, R.raw.scene_image_prompt, style, enrichedDescription)
             val path = generator.generate(prompt, file, ImageProvider.OPENROUTER)
             updated += scene.copy(image = path)
         }
         context.scenes = updated
+    }
+
+    private fun buildReferenceNotes(scene: Scene, context: ProcessingContext): List<String> {
+        val notes = mutableListOf<String>()
+        resolveEnvironmentReference(scene, context)?.image?.takeIf { !it.isNullOrBlank() }?.let { path ->
+            notes += "Environment reference image: $path"
+        }
+        val characterNotes = scene.characters.mapNotNull { character ->
+            resolveCharacterImage(character, context)?.takeIf { it.isNotBlank() }?.let { path ->
+                "${character.displayName} reference image: $path"
+            }
+        }
+        if (characterNotes.isNotEmpty()) {
+            notes += characterNotes.distinct()
+        }
+        return notes
+    }
+
+    private fun resolveEnvironmentReference(scene: Scene, context: ProcessingContext): EnvironmentAsset? {
+        scene.environment?.takeIf { !it.image.isNullOrBlank() }?.let { return it }
+        val candidateName = scene.environment?.displayName ?: scene.environmentName
+        if (candidateName.isNullOrBlank()) {
+            return null
+        }
+        return context.environments.firstOrNull { asset ->
+            !asset.image.isNullOrBlank() && asset.matchesName(candidateName)
+        }
+    }
+
+    private fun resolveCharacterImage(character: CharacterAsset, context: ProcessingContext): String? {
+        character.image?.takeIf { it.isNotBlank() }?.let { return it }
+        val candidateName = character.displayName
+        return context.characters.firstOrNull { asset ->
+            !asset.image.isNullOrBlank() && asset.matchesName(candidateName)
+        }?.image
     }
 }
 
