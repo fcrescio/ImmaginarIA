@@ -224,14 +224,28 @@ class EnvironmentImageGenerationStep(
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
         val total = context.environments.size
+        val previous = context.environments
         val updated = mutableListOf<EnvironmentAsset>()
-        context.environments.forEachIndexed { idx, asset ->
+        previous.forEachIndexed { idx, asset ->
             reporter(appContext.getString(R.string.processing_environment_image_progress, idx + 1, total))
             val file = File(dir, "environment_${idx}.png")
             val enrichedDescription = context.contextualizePrompt(asset.description)
             val prompt = PromptTemplates.load(appContext, R.raw.environment_image_prompt, style, enrichedDescription)
             val path = generator.generate(prompt, file, ImageProvider.FAL)
             updated += asset.copy(image = path)
+        }
+        val replacements = previous.mapIndexed { index, asset -> asset to updated.getOrNull(index) }
+            .filter { it.second != null }
+            .associate { (old, new) -> old to new!! }
+        if (replacements.isNotEmpty()) {
+            context.scenes = context.scenes.map { scene ->
+                val refreshedEnvironment = scene.environment?.let { replacements[it] }
+                if (refreshedEnvironment != null) {
+                    scene.copy(environment = refreshedEnvironment)
+                } else {
+                    scene
+                }
+            }
         }
         context.environments = updated
     }
