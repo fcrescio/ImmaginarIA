@@ -48,7 +48,7 @@ import org.json.JSONObject
  * Displays a story's details using a tabbed layout reminiscent of classic starship interfaces.
  */
 @Composable
-fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
+fun StoryDetailScreen(story: Story, onBack: () -> Unit, onRegenerateImages: (Story) -> Unit) {
     var selectedTab by remember { mutableStateOf(StoryTab.STORY) }
     var currentStory by remember { mutableStateOf(story) }
     var editingTitle by remember { mutableStateOf(false) }
@@ -134,6 +134,13 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit) {
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier.padding(top = 4.dp)
             )
+            Button(
+                onClick = { onRegenerateImages(currentStory) },
+                enabled = !editingTitle,
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(stringResource(R.string.regenerate_images))
+            }
             Text(
                 text = stringResource(selectedTab.title),
                 style = MaterialTheme.typography.caption,
