@@ -15,6 +15,7 @@ data class StoryProcessingPayload(
     val userTitle: String,
     val timestamp: Long,
     val segmentPaths: List<String>,
+    val regenerateImagesOnly: Boolean = false,
 )
 
 private const val PAYLOAD_DIR = "processing_payloads"

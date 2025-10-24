@@ -79,6 +79,31 @@ class MainActivity : ComponentActivity() {
                         } ?: workInfos.firstOrNull { !it.state.isFinished }
                     }
                     val scope = rememberCoroutineScope()
+                    val activityContext = this@MainActivity
+                    suspend fun enqueueProcessing(payload: StoryProcessingPayload) {
+                        val payloadFile = withContext(Dispatchers.IO) {
+                            activityContext.writeStoryProcessingPayload(payload)
+                        }
+                        val request = OneTimeWorkRequestBuilder<StoryProcessingWorker>()
+                            .setInputData(
+                                workDataOf(
+                                    StoryProcessingWorker.KEY_PAYLOAD_PATH to payloadFile.absolutePath,
+                                ),
+                            )
+                            .setConstraints(
+                                Constraints.Builder()
+                                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                                    .build()
+                            )
+                            .addTag(StoryProcessingWorker.WORK_TAG)
+                            .build()
+                        processingWorkId = request.id.toString()
+                        processingLogs.clear()
+                        processingProgress = 0f
+                        lastLogId = null
+                        showProcessing = true
+                        StoryProcessingWorker.enqueue(activityContext, request)
+                    }
                     LaunchedEffect(Unit) {
                         delay(2000)
                         showSplash = false
@@ -160,7 +185,6 @@ class MainActivity : ComponentActivity() {
                                     ),
                                     initialSegments = storyToResume?.segments?.map { File(it) } ?: emptyList(),
                                     onDone = { segments, transcriptions, title ->
-                                        val context = this@MainActivity
                                         showRecorder = false
                                         scope.launch {
                                             val allTranscribed = transcriptions.all { it != null }
@@ -175,28 +199,7 @@ class MainActivity : ComponentActivity() {
                                                     timestamp = timestamp,
                                                     segmentPaths = segments.filterNotNull().map { it.absolutePath },
                                                 )
-                                                val payloadFile = withContext(Dispatchers.IO) {
-                                                    context.writeStoryProcessingPayload(payload)
-                                                }
-                                                val request = OneTimeWorkRequestBuilder<StoryProcessingWorker>()
-                                                    .setInputData(
-                                                        workDataOf(
-                                                            StoryProcessingWorker.KEY_PAYLOAD_PATH to payloadFile.absolutePath,
-                                                        )
-                                                    )
-                                                    .setConstraints(
-                                                        Constraints.Builder()
-                                                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                                                            .build()
-                                                    )
-                                                    .addTag(StoryProcessingWorker.WORK_TAG)
-                                                    .build()
-                                                processingWorkId = request.id.toString()
-                                                processingLogs.clear()
-                                                processingProgress = 0f
-                                                lastLogId = null
-                                                showProcessing = true
-                                                StoryProcessingWorker.enqueue(context, request)
+                                                enqueueProcessing(payload)
                                                 storyToResume = null
                                             } else {
                                                 val segmentPaths = segments.filterNotNull().map { it.absolutePath }
@@ -210,7 +213,7 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 }
                                                 val resolvedTitle = resolveFinalTitle(
-                                                    context = context,
+                                                    context = activityContext,
                                                     userTitle = title,
                                                     extractedTitleEnglish = null,
                                                     extractedTitleLocalized = null,
@@ -234,10 +237,10 @@ class MainActivity : ComponentActivity() {
                                                     processed = false,
                                                 )
                                                 if (storyToResume != null) {
-                                                    StoryRepository.updateStory(context, pendingStory)
+                                                    StoryRepository.updateStory(activityContext, pendingStory)
                                                     storyToResume = null
                                                 } else {
-                                                    StoryRepository.addStory(context, pendingStory)
+                                                    StoryRepository.addStory(activityContext, pendingStory)
                                                 }
                                             }
                                         }
@@ -254,7 +257,25 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             storyToView != null -> {
-                                StoryDetailScreen(story = storyToView!!, onBack = { storyToView = null })
+                                StoryDetailScreen(
+                                    story = storyToView!!,
+                                    onBack = { storyToView = null },
+                                    onRegenerateImages = { targetStory ->
+                                        scope.launch {
+                                            val payload = StoryProcessingPayload(
+                                                storyId = targetStory.id,
+                                                prompt = getString(R.string.story_prompt),
+                                                transcriptions = emptyList(),
+                                                userTitle = targetStory.title,
+                                                timestamp = targetStory.timestamp,
+                                                segmentPaths = targetStory.segments,
+                                                regenerateImagesOnly = true,
+                                            )
+                                            enqueueProcessing(payload)
+                                            storyToView = null
+                                        }
+                                    }
+                                )
                             }
                             else -> {
                                 StoryListScreen(

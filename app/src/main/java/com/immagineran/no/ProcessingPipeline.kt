@@ -362,6 +362,13 @@ private fun formatLabel(key: String): String {
 private fun joinLabels(vararg parts: String): String =
     parts.map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" ")
 
+fun extractStoryContextTags(rawContent: String?): List<String> {
+    val trimmed = rawContent?.trim().orEmpty()
+    if (trimmed.isEmpty()) return emptyList()
+    val json = runCatching { JSONObject(trimmed) }.getOrNull()
+    return collectStoryTags(json)
+}
+
 fun ProcessingContext.contextualizePrompt(base: String): String {
     val trimmed = base.trim()
     if (storyContextTags.isEmpty()) {

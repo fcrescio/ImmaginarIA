@@ -32,8 +32,20 @@ class StoryProcessingWorker(
             return Result.failure()
         }
 
+        val regenerateImagesOnly = payload.regenerateImagesOnly
+        val existingStory = StoryRepository
+            .getStories(applicationContext)
+            .find { it.id == payload.storyId }
+        if (regenerateImagesOnly && existingStory == null) {
+            payloadFile.delete()
+            return Result.failure()
+        }
+
         val processingContext = ProcessingContext(payload.prompt, payload.transcriptions, payload.storyId)
-        val steps = buildSteps()
+        if (regenerateImagesOnly && existingStory != null) {
+            prepareContextForImageRegeneration(processingContext, existingStory)
+        }
+        val steps = buildSteps(regenerateImagesOnly)
         ensureChannel()
         setForeground(createForegroundInfo(applicationContext.getString(R.string.processing)))
         emitLog(applicationContext.getString(R.string.processing))
@@ -51,7 +63,7 @@ class StoryProcessingWorker(
                 }
             )
         }.mapCatching {
-            finalizeStory(processingContext, payload)
+            finalizeStory(processingContext, payload, existingStory)
         }
 
         payloadFile.delete()
@@ -68,7 +80,32 @@ class StoryProcessingWorker(
         )
     }
 
-    private fun buildSteps(): MutableList<ProcessingStep> {
+    private fun prepareContextForImageRegeneration(context: ProcessingContext, story: Story) {
+        context.story = story.storyEnglish ?: story.storyOriginal ?: story.content
+        context.storyTitle = story.title
+        context.storyTitleEnglish = story.title
+        context.storyLanguage = story.language
+        context.storyOriginal = story.storyOriginal ?: story.content
+        context.storyEnglish = story.storyEnglish ?: story.storyOriginal ?: story.content
+        context.storyJson = story.content
+        context.characters = story.characters
+        context.environments = story.environments
+        context.scenes = story.scenes
+        context.storyContextTags = extractStoryContextTags(story.content)
+    }
+
+    private fun buildSteps(regenerateImagesOnly: Boolean): MutableList<ProcessingStep> {
+        if (regenerateImagesOnly) {
+            val steps = mutableListOf<ProcessingStep>()
+            if (SettingsManager.isCharacterImageGenerationEnabled(applicationContext)) {
+                steps.add(CharacterImageGenerationStep(applicationContext))
+            }
+            if (SettingsManager.isEnvironmentImageGenerationEnabled(applicationContext)) {
+                steps.add(EnvironmentImageGenerationStep(applicationContext))
+            }
+            steps.add(SceneImageGenerationStep(applicationContext))
+            return steps
+        }
         val steps = mutableListOf<ProcessingStep>(
             StoryStitchingStep(applicationContext),
             CharacterExtractionStep(applicationContext),
@@ -85,7 +122,21 @@ class StoryProcessingWorker(
         return steps
     }
 
-    private suspend fun finalizeStory(context: ProcessingContext, payload: StoryProcessingPayload) {
+    private suspend fun finalizeStory(
+        context: ProcessingContext,
+        payload: StoryProcessingPayload,
+        existingStory: Story?,
+    ) {
+        if (payload.regenerateImagesOnly) {
+            val existing = existingStory ?: return
+            val updated = existing.copy(
+                characters = context.characters,
+                environments = context.environments,
+                scenes = context.scenes,
+            )
+            StoryRepository.updateStory(applicationContext, updated)
+            return
+        }
         val processed = !context.story.isNullOrBlank()
         val content = context.storyJson ?: context.story ?: ""
         val segments = if (processed) {
@@ -97,9 +148,10 @@ class StoryProcessingWorker(
             payload.segmentPaths
         }
 
-        val existing = StoryRepository
-            .getStories(applicationContext)
-            .find { it.id == payload.storyId }
+        val existing = existingStory
+            ?: StoryRepository
+                .getStories(applicationContext)
+                .find { it.id == payload.storyId }
 
         val resolvedTitle = resolveFinalTitle(
             context = applicationContext,
