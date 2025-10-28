@@ -274,7 +274,61 @@ class MainActivity : ComponentActivity() {
                                             enqueueProcessing(payload)
                                             storyToView = null
                                         }
-                                    }
+                                    },
+                                    onRegenerateCharacterImage = { targetStory, index ->
+                                        scope.launch {
+                                            val payload = StoryProcessingPayload(
+                                                storyId = targetStory.id,
+                                                prompt = getString(R.string.story_prompt),
+                                                transcriptions = emptyList(),
+                                                userTitle = targetStory.title,
+                                                timestamp = targetStory.timestamp,
+                                                segmentPaths = targetStory.segments,
+                                                regenerateImagesOnly = true,
+                                                regenerationTargets = ImageRegenerationTargets(
+                                                    characterIndices = listOf(index),
+                                                ),
+                                            )
+                                            enqueueProcessing(payload)
+                                            storyToView = null
+                                        }
+                                    },
+                                    onRegenerateEnvironmentImage = { targetStory, index ->
+                                        scope.launch {
+                                            val payload = StoryProcessingPayload(
+                                                storyId = targetStory.id,
+                                                prompt = getString(R.string.story_prompt),
+                                                transcriptions = emptyList(),
+                                                userTitle = targetStory.title,
+                                                timestamp = targetStory.timestamp,
+                                                segmentPaths = targetStory.segments,
+                                                regenerateImagesOnly = true,
+                                                regenerationTargets = ImageRegenerationTargets(
+                                                    environmentIndices = listOf(index),
+                                                ),
+                                            )
+                                            enqueueProcessing(payload)
+                                            storyToView = null
+                                        }
+                                    },
+                                    onRegenerateSceneImage = { targetStory, index ->
+                                        scope.launch {
+                                            val payload = StoryProcessingPayload(
+                                                storyId = targetStory.id,
+                                                prompt = getString(R.string.story_prompt),
+                                                transcriptions = emptyList(),
+                                                userTitle = targetStory.title,
+                                                timestamp = targetStory.timestamp,
+                                                segmentPaths = targetStory.segments,
+                                                regenerateImagesOnly = true,
+                                                regenerationTargets = ImageRegenerationTargets(
+                                                    sceneIndices = listOf(index),
+                                                ),
+                                            )
+                                            enqueueProcessing(payload)
+                                            storyToView = null
+                                        }
+                                    },
                                 )
                             }
                             else -> {

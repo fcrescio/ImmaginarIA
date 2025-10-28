@@ -16,6 +16,13 @@ data class StoryProcessingPayload(
     val timestamp: Long,
     val segmentPaths: List<String>,
     val regenerateImagesOnly: Boolean = false,
+    val regenerationTargets: ImageRegenerationTargets? = null,
+)
+
+data class ImageRegenerationTargets(
+    val characterIndices: List<Int> = emptyList(),
+    val environmentIndices: List<Int> = emptyList(),
+    val sceneIndices: List<Int> = emptyList(),
 )
 
 private const val PAYLOAD_DIR = "processing_payloads"

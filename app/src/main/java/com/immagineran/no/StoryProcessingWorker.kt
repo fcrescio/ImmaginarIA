@@ -41,11 +41,16 @@ class StoryProcessingWorker(
             return Result.failure()
         }
 
-        val processingContext = ProcessingContext(payload.prompt, payload.transcriptions, payload.storyId)
+        val processingContext = ProcessingContext(
+            prompt = payload.prompt,
+            segments = payload.transcriptions,
+            id = payload.storyId,
+            regenerationTargets = payload.regenerationTargets,
+        )
         if (regenerateImagesOnly && existingStory != null) {
             prepareContextForImageRegeneration(processingContext, existingStory)
         }
-        val steps = buildSteps(regenerateImagesOnly)
+        val steps = buildSteps(regenerateImagesOnly, payload.regenerationTargets)
         ensureChannel()
         setForeground(createForegroundInfo(applicationContext.getString(R.string.processing)))
         emitLog(applicationContext.getString(R.string.processing))
@@ -94,16 +99,24 @@ class StoryProcessingWorker(
         context.storyContextTags = extractStoryContextTags(story.content)
     }
 
-    private fun buildSteps(regenerateImagesOnly: Boolean): MutableList<ProcessingStep> {
+    private fun buildSteps(
+        regenerateImagesOnly: Boolean,
+        targets: ImageRegenerationTargets?,
+    ): MutableList<ProcessingStep> {
         if (regenerateImagesOnly) {
             val steps = mutableListOf<ProcessingStep>()
-            if (SettingsManager.isCharacterImageGenerationEnabled(applicationContext)) {
+            val regenerateCharacters = targets?.characterIndices?.isNotEmpty() ?: true
+            val regenerateEnvironments = targets?.environmentIndices?.isNotEmpty() ?: true
+            val regenerateScenes = targets?.sceneIndices?.isNotEmpty() ?: true
+            if (regenerateCharacters && SettingsManager.isCharacterImageGenerationEnabled(applicationContext)) {
                 steps.add(CharacterImageGenerationStep(applicationContext))
             }
-            if (SettingsManager.isEnvironmentImageGenerationEnabled(applicationContext)) {
+            if (regenerateEnvironments && SettingsManager.isEnvironmentImageGenerationEnabled(applicationContext)) {
                 steps.add(EnvironmentImageGenerationStep(applicationContext))
             }
-            steps.add(SceneImageGenerationStep(applicationContext))
+            if (regenerateScenes) {
+                steps.add(SceneImageGenerationStep(applicationContext))
+            }
             return steps
         }
         val steps = mutableListOf<ProcessingStep>(

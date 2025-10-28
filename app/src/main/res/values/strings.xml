@@ -51,6 +51,7 @@
     <string name="edit_title">Edit title</string>
     <string name="save_title">Save title</string>
     <string name="regenerate_images">Regenerate images</string>
+    <string name="regenerate_image">Regenerate image</string>
     <string name="processing">Processing</string>
     <string name="processing_complete">Processing complete</string>
     <string name="processing_failed">Processing failed</string>
