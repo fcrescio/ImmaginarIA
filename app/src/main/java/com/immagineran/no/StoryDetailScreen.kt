@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -48,7 +49,14 @@ import org.json.JSONObject
  * Displays a story's details using a tabbed layout reminiscent of classic starship interfaces.
  */
 @Composable
-fun StoryDetailScreen(story: Story, onBack: () -> Unit, onRegenerateImages: (Story) -> Unit) {
+fun StoryDetailScreen(
+    story: Story,
+    onBack: () -> Unit,
+    onRegenerateImages: (Story) -> Unit,
+    onRegenerateCharacterImage: (Story, Int) -> Unit,
+    onRegenerateEnvironmentImage: (Story, Int) -> Unit,
+    onRegenerateSceneImage: (Story, Int) -> Unit,
+) {
     var selectedTab by remember { mutableStateOf(StoryTab.STORY) }
     var currentStory by remember { mutableStateOf(story) }
     var editingTitle by remember { mutableStateOf(false) }
@@ -148,9 +156,24 @@ fun StoryDetailScreen(story: Story, onBack: () -> Unit, onRegenerateImages: (Sto
             )
             when (selectedTab) {
                 StoryTab.STORY -> StoryContent(currentStory)
-                StoryTab.CHARACTERS -> CharacterList(currentStory.characters)
-                StoryTab.ENVIRONMENTS -> EnvironmentList(currentStory.environments)
-                StoryTab.SCENES -> SceneList(currentStory.scenes)
+                StoryTab.CHARACTERS -> CharacterList(
+                    characters = currentStory.characters,
+                    onRegenerateImage = { index ->
+                        onRegenerateCharacterImage(currentStory, index)
+                    },
+                )
+                StoryTab.ENVIRONMENTS -> EnvironmentList(
+                    environments = currentStory.environments,
+                    onRegenerateImage = { index ->
+                        onRegenerateEnvironmentImage(currentStory, index)
+                    },
+                )
+                StoryTab.SCENES -> SceneList(
+                    scenes = currentStory.scenes,
+                    onRegenerateImage = { index ->
+                        onRegenerateSceneImage(currentStory, index)
+                    },
+                )
             }
         }
     }
@@ -263,7 +286,10 @@ private fun extractParagraphs(content: String): List<String> {
 }
 
 @Composable
-private fun CharacterList(characters: List<CharacterAsset>) {
+private fun CharacterList(
+    characters: List<CharacterAsset>,
+    onRegenerateImage: (Int) -> Unit,
+) {
     val galleryItems = remember(characters) {
         characters.mapNotNull { character ->
             character.image?.let {
@@ -280,7 +306,7 @@ private fun CharacterList(characters: List<CharacterAsset>) {
     }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        items(characters) { c ->
+        itemsIndexed(characters) { index, c ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 c.image?.let {
                     val bmp = BitmapFactory.decodeFile(it)
@@ -304,6 +330,12 @@ private fun CharacterList(characters: List<CharacterAsset>) {
                     if (c.image == null) {
                         Text(stringResource(R.string.image_generation_error))
                     }
+                    Button(
+                        onClick = { onRegenerateImage(index) },
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        Text(stringResource(R.string.regenerate_image))
+                    }
                 }
             }
         }
@@ -320,7 +352,10 @@ private fun CharacterList(characters: List<CharacterAsset>) {
 }
 
 @Composable
-private fun EnvironmentList(environments: List<EnvironmentAsset>) {
+private fun EnvironmentList(
+    environments: List<EnvironmentAsset>,
+    onRegenerateImage: (Int) -> Unit,
+) {
     val galleryItems = remember(environments) {
         environments.mapNotNull { environment ->
             environment.image?.let {
@@ -337,7 +372,7 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
     }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        items(environments) { e ->
+        itemsIndexed(environments) { index, e ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 e.image?.let {
                     val bmp = BitmapFactory.decodeFile(it)
@@ -361,6 +396,12 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
                     if (e.image == null) {
                         Text(stringResource(R.string.image_generation_error))
                     }
+                    Button(
+                        onClick = { onRegenerateImage(index) },
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        Text(stringResource(R.string.regenerate_image))
+                    }
                 }
             }
         }
@@ -377,7 +418,10 @@ private fun EnvironmentList(environments: List<EnvironmentAsset>) {
 }
 
 @Composable
-private fun SceneList(scenes: List<Scene>) {
+private fun SceneList(
+    scenes: List<Scene>,
+    onRegenerateImage: (Int) -> Unit,
+) {
     val galleryItems = remember(scenes) {
         scenes.mapNotNull { scene ->
             scene.image?.let {
@@ -394,7 +438,7 @@ private fun SceneList(scenes: List<Scene>) {
     }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-        items(scenes) { s ->
+        itemsIndexed(scenes) { index, s ->
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 s.image?.let {
                     val bmp = BitmapFactory.decodeFile(it)
@@ -416,6 +460,12 @@ private fun SceneList(scenes: List<Scene>) {
                 Text(s.displayCaptionOriginal, modifier = Modifier.padding(top = 4.dp))
                 if (s.image == null) {
                     Text(stringResource(R.string.image_generation_error))
+                }
+                Button(
+                    onClick = { onRegenerateImage(index) },
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text(stringResource(R.string.regenerate_image))
                 }
             }
         }

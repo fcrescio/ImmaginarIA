@@ -13,6 +13,7 @@ data class ProcessingContext(
     val prompt: String,
     val segments: List<String>,
     val id: Long,
+    var regenerationTargets: ImageRegenerationTargets? = null,
     var story: String? = null,
     var storyTitle: String? = null,
     var storyTitleEnglish: String? = null,
@@ -199,17 +200,31 @@ class CharacterImageGenerationStep(
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         if (context.characters.isEmpty()) return
+        val targets = context.regenerationTargets?.characterIndices?.takeIf { it.isNotEmpty() }?.toSet()
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
-        val total = context.characters.size
+        val total = targets?.size ?: context.characters.size
         val updated = mutableListOf<CharacterAsset>()
+        var processed = 0
         context.characters.forEachIndexed { idx, asset ->
-            reporter(appContext.getString(R.string.processing_character_image_progress, idx + 1, total))
-            val file = File(dir, "character_${idx}.png")
-            val enrichedDescription = context.contextualizePrompt(asset.description)
-            val prompt = PromptTemplates.load(appContext, R.raw.character_image_prompt, style, enrichedDescription)
-            val path = generator.generate(prompt, file, ImageProvider.FAL)
-            updated += asset.copy(image = path)
+            val shouldRegenerate = targets?.contains(idx) ?: true
+            if (shouldRegenerate) {
+                reporter(
+                    appContext.getString(
+                        R.string.processing_character_image_progress,
+                        processed + 1,
+                        total,
+                    ),
+                )
+                val file = File(dir, "character_${idx}.png")
+                val enrichedDescription = context.contextualizePrompt(asset.description)
+                val prompt = PromptTemplates.load(appContext, R.raw.character_image_prompt, style, enrichedDescription)
+                val path = generator.generate(prompt, file, ImageProvider.FAL)
+                updated += asset.copy(image = path)
+                processed += 1
+            } else {
+                updated += asset
+            }
         }
         context.characters = updated
     }
@@ -221,18 +236,32 @@ class EnvironmentImageGenerationStep(
 ) : ProcessingStep {
     override suspend fun process(context: ProcessingContext, reporter: ProgressReporter) {
         if (context.environments.isEmpty()) return
+        val targets = context.regenerationTargets?.environmentIndices?.takeIf { it.isNotEmpty() }?.toSet()
         val dir = File(appContext.filesDir, context.id.toString()).apply { mkdirs() }
         val style = SettingsManager.getImageStyle(appContext)
-        val total = context.environments.size
+        val total = targets?.size ?: context.environments.size
         val previous = context.environments
         val updated = mutableListOf<EnvironmentAsset>()
+        var processed = 0
         previous.forEachIndexed { idx, asset ->
-            reporter(appContext.getString(R.string.processing_environment_image_progress, idx + 1, total))
-            val file = File(dir, "environment_${idx}.png")
-            val enrichedDescription = context.contextualizePrompt(asset.description)
-            val prompt = PromptTemplates.load(appContext, R.raw.environment_image_prompt, style, enrichedDescription)
-            val path = generator.generate(prompt, file, ImageProvider.FAL)
-            updated += asset.copy(image = path)
+            val shouldRegenerate = targets?.contains(idx) ?: true
+            if (shouldRegenerate) {
+                reporter(
+                    appContext.getString(
+                        R.string.processing_environment_image_progress,
+                        processed + 1,
+                        total,
+                    ),
+                )
+                val file = File(dir, "environment_${idx}.png")
+                val enrichedDescription = context.contextualizePrompt(asset.description)
+                val prompt = PromptTemplates.load(appContext, R.raw.environment_image_prompt, style, enrichedDescription)
+                val path = generator.generate(prompt, file, ImageProvider.FAL)
+                updated += asset.copy(image = path)
+                processed += 1
+            } else {
+                updated += asset
+            }
         }
         val replacements = previous.mapIndexed { index, asset -> asset to updated.getOrNull(index) }
             .filter { it.second != null }
